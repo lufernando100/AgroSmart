@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-turbopack --yes)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-turbopack)",
+      "Read(//c/Users/luis.hernandezf/Documents/**)",
+      "Bash(npx create-next-app@latest agrosmart-temp --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-turbopack --yes)",
+      "Bash(rsync -a --exclude='.git' /c/Users/luis.hernandezf/Documents/agrosmart-temp/ /c/Users/luis.hernandezf/Documents/AgroSmart/)",
+      "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/01_modelo_datos.sql /c/Users/luis.hernandezf/Documents/AgroSmart/database/01_modelo_datos.sql)",
+      "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/02_system_prompt_tools.ts /c/Users/luis.hernandezf/Documents/AgroSmart/src/lib/ai/system_prompt_tools.ts)",
+      "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/03_flujos_whatsapp.md /c/Users/luis.hernandezf/Documents/AgroSmart/docs/03_flujos_whatsapp.md)",
+      "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/04_wireframes.md /c/Users/luis.hernandezf/Documents/AgroSmart/docs/04_wireframes.md)",
+      "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/05_datos_semilla.sql /c/Users/luis.hernandezf/Documents/AgroSmart/database/05_datos_semilla.sql)",
+      "Bash(git config:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
