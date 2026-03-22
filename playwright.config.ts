@@ -16,7 +16,8 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    // En GitHub Actions siempre levantar servidor; en local reutilizar `npm run dev` aunque CI esté definido.
+    reuseExistingServer: process.env.GITHUB_ACTIONS !== 'true',
     timeout: 120_000,
   },
 })
