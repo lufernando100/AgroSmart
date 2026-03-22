@@ -5,7 +5,9 @@ test.describe('Páginas públicas', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: /GranoVivo/i })).toBeVisible()
     await expect(page.getByRole('link', { name: /Iniciar sesión/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /Ir al catálogo/i })).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: /Ver catálogo sin registrarse/i })
+    ).toBeVisible()
   })
 
   test('login muestra formulario de celular', async ({ page }) => {
