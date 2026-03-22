@@ -31,6 +31,8 @@ npm run build    # Build de producción
 npm run lint     # Linter ESLint
 npm test         # Pruebas unitarias y de componentes (Vitest)
 npm run test:watch  # Pruebas en modo watch
+npm run ci       # Igual que GitHub Actions: lint + typecheck + test + build + E2E (env Supabase placeholder)
+npm run test:e2e # Solo Playwright (levanta `next dev` solo)
 supabase gen types typescript --local > src/types/supabase.ts  # Regenerar tipos tras cambios en BD
 ```
 
