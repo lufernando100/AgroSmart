@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import {
   listarCategoriasActivas,
   listarProductosResumen,
+  listarMejoresPreciosPorProducto,
   parseSector,
 } from '@/lib/catalogo/queries'
 import { isUuid } from '@/lib/catalogo/uuid'
@@ -17,9 +18,10 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   const categoriaId =
     sp.categoria_id && isUuid(sp.categoria_id) ? sp.categoria_id : undefined
 
-  const [categorias, productos] = await Promise.all([
+  const [categorias, productos, preciosPorProducto] = await Promise.all([
     listarCategoriasActivas(),
     listarProductosResumen({ sector, categoriaId }),
+    listarMejoresPreciosPorProducto(),
   ])
 
   return (
@@ -38,6 +40,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
             categorias={categorias}
             productos={productos}
             categoriaIdActiva={categoriaId ?? null}
+            preciosPorProducto={preciosPorProducto}
           />
         </Suspense>
       </div>

@@ -259,6 +259,51 @@ export async function buscarProductosSoloTexto(params: {
   return list
 }
 
+export type MejorPrecioPorProducto = Record<
+  string,
+  { almacenId: string; almacenNombre: string; precio: number }
+>
+
+/**
+ * Devuelve el almacén con el precio más bajo para cada producto.
+ * Se usa en el catálogo para el botón QuickAdd directo desde la lista.
+ */
+export async function listarMejoresPreciosPorProducto(): Promise<MejorPrecioPorProducto> {
+  const supabase = await createClient()
+
+  type PrecioAlmacenRow = {
+    producto_id: string
+    precio_unitario: number | string
+    almacen_id: string
+    almacenes: { nombre: string } | null
+  }
+
+  const { data, error } = await supabase
+    .from('precios')
+    .select('producto_id, precio_unitario, almacen_id, almacenes ( nombre )')
+    .eq('disponible', true)
+
+  if (error) throw new Error(error.message)
+
+  const rows = (data ?? []) as unknown as PrecioAlmacenRow[]
+  const mejores: MejorPrecioPorProducto = {}
+
+  for (const r of rows) {
+    if (!r.almacenes) continue
+    const precio = Number(r.precio_unitario)
+    const existing = mejores[r.producto_id]
+    if (!existing || precio < existing.precio) {
+      mejores[r.producto_id] = {
+        almacenId: r.almacen_id,
+        almacenNombre: r.almacenes.nombre,
+        precio,
+      }
+    }
+  }
+
+  return mejores
+}
+
 export function parseSector(q: string | null): SectorTipo {
   if (q && isSectorTipo(q)) return q
   return 'cafe'

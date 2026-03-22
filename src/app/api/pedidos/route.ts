@@ -12,13 +12,6 @@ const NOTAS_MAX_LEN = 500
 const CANTIDAD_MIN = 1
 const CANTIDAD_MAX = 9_999
 
-type Body = {
-  almacen_id: string
-  items: { producto_id: string; cantidad: number }[]
-  notas?: string
-  canal?: ConversacionCanal
-}
-
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x)
 }

@@ -140,16 +140,23 @@
 - ✅ `docs/06_diseno_ui.md` — Especificación completa de diseño: paleta de colores (tierra/café), tipografía (Plus Jakarta Sans), espaciado, componentes, iconografía, responsive, accesibilidad
 - ✅ `docs/PROMPT_COMPLETO.md` — Prompt de desarrollo completo con contexto del proyecto, arquitectura, modelo de datos, flujos
 
+### Implementados
+- ✅ Fuente Plus Jakarta Sans via `next/font/google` en `src/app/layout.tsx`
+- ✅ Paleta de colores tierra/café en `src/app/globals.css` (`@theme` con tokens `--color-primary-500` etc.)
+- ✅ Fondos `#FAFAF8` (beige cálido) en layout y tarjetas
+- ✅ Cards con `rounded-2xl`, sombras cálidas `shadow-[0_1px_3px_rgba(18,17,16,0.06)]` y borde `#E8E4DD`
+- ✅ Tab bar inferior del caficultor (5 tabs: Inicio, Catálogo, Mi Finca, Mis Costos, Asistente)
+- ✅ Sidebar desktop responsive (224px sidebar md+; tab bar solo mobile)
+- ✅ Layout responsive corregido — desktop con sidebar, NO la vista de teléfono centrada
+- ✅ Estados vacíos con `<MensajeVacio>` (`src/components/ui/MensajeVacio.tsx`)
+- ✅ Elevación de tarjetas catálogo: `hover:-translate-y-0.5`, `hover:shadow-[0_4px_16px...]`, `active:translate-y-0`
+- ✅ Haptic feedback CSS: `active:scale-[0.97]` en botones y `active:scale-90` en controles
+- ✅ Quick Add (`src/components/catalogo/QuickAdd.tsx`) — botón `+` en tarjetas del catálogo con drawer inline, reduce el flujo de compra de 4 taps a 3
+
 ### Pendientes de implementar (diseño)
-- ⏳ Fuente Plus Jakarta Sans (Google Fonts) — actualmente usa fuentes por defecto
-- ⏳ Paleta de colores tierra/café (CSS variables) — actualmente usa Tailwind emerald/zinc genérico
-- ⏳ Fondos neutral-50 (beige cálido) en vez de blanco puro
-- ⏳ Touch targets 48px mínimo en todos los botones
-- ⏳ Texto cuerpo 17px (actualmente usa text-base = 16px)
-- ⏳ Cards con border-radius 12px, sombras cálidas y borde neutral-200
-- ⏳ Tab bar inferior del caficultor (5 tabs con iconos Lucide)
 - ⏳ Skeleton loading para catálogo, precios, pedidos
-- ⏳ Estados vacíos con ilustración y acción clara
+- ⏳ Glassmorphism en sidebar desktop (solo, por costo GPU en Android 3G)
+- ⏳ Bento grid para pantalla `/inicio`
 - ⏳ Modo oscuro con paleta invertida
 - ⏳ Service Worker para PWA offline
 
@@ -164,17 +171,19 @@
 - ✅ `src/lib/catalogo/uuid.test.ts` — validación UUID (7 tests)
 - ✅ `src/lib/whatsapp/verifySignature.test.ts` — firma HMAC de Meta (6 tests)
 - ✅ `src/lib/supabase/env.test.ts` — validación de variables de entorno (8 tests)
+- ✅ `src/lib/utils/db-errors.test.ts` — mapeo Postgres → mensajes amigables (20 tests)
 
 ### Tests de lógica de negocio (con mocks)
 - ✅ `src/lib/whatsapp/send.test.ts` — envío WhatsApp, validación, API mock (6 tests)
 - ✅ `src/lib/whatsapp/processIncoming.test.ts` — procesamiento webhook entrante (7 tests)
 - ✅ `src/lib/ai/execute-tools.test.ts` — ejecución de tools del asistente (8 tests)
+- ✅ `src/lib/pedidos/service.test.ts` — tests negativos: caficultor no existe, almacén inactivo, items vacíos, FK violation (7 tests)
 
 ### Tests de componentes React
-- ✅ `src/app/login/login-form.test.tsx` — flujo OTP: teléfono → código → verificación (9 tests)
+- ✅ `src/app/login/login-form.test.tsx` — flujo OTP + error amigable de perfil FK (9 tests)
 - ✅ `src/components/pedidos/PedidoEstadoRealtime.test.tsx` — estados del pedido en tiempo real (6 tests)
 
-**Total: 81 tests, 10 archivos — `npm test`**
+**Total: 109 tests, 12 archivos — `npm test`**
 
 ---
 
@@ -198,4 +207,12 @@ _Ninguno por ahora._
 | 2026-03-21 | Catálogo 1.2: APIs `/api/productos`, `/api/productos/buscar`, páginas `/catalogo` y `/catalogo/[id]`, `lib/catalogo/queries.ts`. RPC distancia: `database/07_fn_productos_distancia.sql`. |
 | 2026-03-21 | Fase 1.3–1.6: flujo PWA pedido/confirmación + Realtime (`09_realtime_pedidos.sql`), panel almacén (dashboard, pedidos, productos), API `PATCH /api/almacen/precios/[id]`, WhatsApp envío + webhook asíncrono + SI/NO almacén. |
 | 2026-03-21 | Revisión Fase 1: build OK, 0 errores TypeScript. Agregados docs de diseño UI (`06_diseno_ui.md`, `PROMPT_COMPLETO.md`). Infraestructura de testing con Vitest + RTL: 81 tests cubriendo utils, lógica de negocio y componentes React. |
+| 2026-03-22 | Bug crítico: cookies de sesión perdían opciones (httpOnly, maxAge) al propagarse en `/api/auth/otp`. Fix: buffer `pendingCookies` captura opciones completas de `setAll`. |
+| 2026-03-22 | Diseño aplicado: paleta tierra/café, Plus Jakarta Sans, layout responsive con sidebar desktop (md+) + tab bar mobile. Se descartó vista de teléfono centrada. |
+| 2026-03-22 | Errores amigables: `friendlyDbError()` en `db-errors.ts`, validación FK antes de INSERT en `pedidos`, `<MensajeError>` y `<MensajeVacio>` como componentes reutilizables. |
+| 2026-03-22 | Validaciones: `notas` maxLength=500, `cantidad` min=1 max=9999 en cliente y servidor (`/api/pedidos`). |
+| 2026-03-22 | Fotos de producto: `extractFotoUrl(metadata)` en queries, `<FotoProducto>` con placeholder en `CatalogoCliente`. |
+| 2026-03-22 | Tests negativos: 109 tests, 12 archivos. Nuevos: `db-errors.test.ts` (20), `service.test.ts` pedidos (7), login-form con error FK (1). |
+| 2026-03-22 | Diseño "Premium Agro-Tech": elevación de tarjetas (hover shadow + translate), haptic CSS (active:scale), Quick Add con drawer inline en tarjetas del catálogo. Framer Motion descartado (+44KB, lento en 3G). |
+| 2026-03-22 | `listarMejoresPreciosPorProducto()` en queries.ts; CatalogoPage pasa `preciosPorProducto` a CatalogoCliente para activar QuickAdd. Build ✅ 109/109 tests ✅. |
 

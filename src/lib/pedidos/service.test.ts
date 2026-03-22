@@ -15,6 +15,8 @@ function makeSupabaseMock(overrides: {
   pedidosInsert?: { data: unknown; error: unknown }
   pedidoItemsInsert?: { data: unknown; error: unknown }
 }) {
+  let callCount = 0
+
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -23,40 +25,36 @@ function makeSupabaseMock(overrides: {
     single: vi.fn(),
     insert: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
-  }
-
-  let callCount = 0
-
-  builder.from = vi.fn((table: string) => {
-    if (table === 'usuarios') {
-      builder.maybeSingle.mockResolvedValueOnce(overrides.usuarios ?? { data: { id: 'caf-1' }, error: null })
-    } else if (table === 'almacenes') {
-      builder.maybeSingle.mockResolvedValueOnce(
-        overrides.almacenes ?? {
-          data: { id: 'alm-1', comision_porcentaje: 3, activo: true, acepta_pedidos_digitales: true },
-          error: null,
+    from: vi.fn((table: string) => {
+      if (table === 'usuarios') {
+        builder.maybeSingle.mockResolvedValueOnce(overrides.usuarios ?? { data: { id: 'caf-1' }, error: null })
+      } else if (table === 'almacenes') {
+        builder.maybeSingle.mockResolvedValueOnce(
+          overrides.almacenes ?? {
+            data: { id: 'alm-1', comision_porcentaje: 3, activo: true, acepta_pedidos_digitales: true },
+            error: null,
+          }
+        )
+      } else if (table === 'precios') {
+        builder.maybeSingle.mockResolvedValueOnce(
+          overrides.precios ?? {
+            data: { precio_unitario: 50000, disponible: true },
+            error: null,
+          }
+        )
+      } else if (table === 'pedidos') {
+        callCount++
+        if (callCount === 1 && overrides.pedidosInsert) {
+          builder.single.mockResolvedValueOnce(overrides.pedidosInsert)
+        } else {
+          builder.single.mockResolvedValueOnce({ data: { id: 'ped-1', numero: 'GV-00001' }, error: null })
         }
-      )
-    } else if (table === 'precios') {
-      builder.maybeSingle.mockResolvedValueOnce(
-        overrides.precios ?? {
-          data: { precio_unitario: 50000, disponible: true },
-          error: null,
-        }
-      )
-    } else if (table === 'pedidos') {
-      callCount++
-      if (callCount === 1 && overrides.pedidosInsert) {
-        // primera llamada al INSERT de pedidos
-        builder.single.mockResolvedValueOnce(overrides.pedidosInsert)
-      } else {
-        builder.single.mockResolvedValueOnce({ data: { id: 'ped-1', numero: 'GV-00001' }, error: null })
+      } else if (table === 'pedido_items') {
+        builder.insert.mockResolvedValueOnce(overrides.pedidoItemsInsert ?? { error: null })
       }
-    } else if (table === 'pedido_items') {
-      builder.insert.mockResolvedValueOnce(overrides.pedidoItemsInsert ?? { error: null })
-    }
-    return builder
-  })
+      return builder
+    }),
+  }
 
   return builder
 }
