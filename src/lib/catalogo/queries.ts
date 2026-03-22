@@ -1,153 +1,152 @@
 import { createClient } from '@/lib/supabase/server'
-import type { SectorTipo } from '@/types/database'
+import type { SectorType } from '@/types/database'
 
-export type ProductoListado = {
+/** Catalog product row for list cards (UI copy is Spanish; field names in English). */
+export type ProductSummary = {
   id: string
-  nombre: string
-  nombre_corto: string | null
-  presentacion: string | null
-  unidad_medida: string
-  categoria_id: string | null
-  categoria_nombre: string | null
-  precio_desde: number
-  almacenes_count: number
-  /** URL de la foto del producto (almacenada en metadata.foto_url). Null si no tiene foto. */
-  foto_url: string | null
-  distancia_km_min?: number
+  name: string
+  short_name: string | null
+  presentation: string | null
+  unit_of_measure: string
+  category_id: string | null
+  category_name: string | null
+  price_from: number
+  warehouse_count: number
+  photo_url: string | null
+  min_distance_km?: number
 }
 
-type ProductoRow = {
+type ProductRow = {
   id: string
-  nombre: string
-  nombre_corto: string | null
-  presentacion: string | null
-  unidad_medida: string
-  categoria_id: string | null
+  name: string
+  short_name: string | null
+  presentation: string | null
+  unit_of_measure: string
+  category_id: string | null
   sector: string
   metadata: Record<string, unknown> | null
-  categorias: { nombre: string } | null
+  categories: { name: string } | null
 }
 
-/** Extrae foto_url del campo JSONB metadata del producto. */
-function extractFotoUrl(metadata: Record<string, unknown> | null): string | null {
+function extractPhotoUrl(metadata: Record<string, unknown> | null): string | null {
   if (!metadata || typeof metadata !== 'object') return null
   const url = metadata.foto_url
   return typeof url === 'string' && url.trim().length > 0 ? url.trim() : null
 }
 
-type PrecioRow = {
-  producto_id: string
-  almacen_id: string
-  precio_unitario: number | string
+type PriceRow = {
+  product_id: string
+  warehouse_id: string
+  unit_price: number | string
 }
 
-function aggregatePrecios(rows: PrecioRow[]) {
-  const map = new Map<string, { min: number; almacenes: Set<string> }>()
+function aggregatePrices(rows: PriceRow[]) {
+  const map = new Map<string, { min: number; warehouses: Set<string> }>()
   for (const r of rows) {
-    const price = Number(r.precio_unitario)
-    const cur = map.get(r.producto_id) ?? {
+    const price = Number(r.unit_price)
+    const cur = map.get(r.product_id) ?? {
       min: Number.POSITIVE_INFINITY,
-      almacenes: new Set<string>(),
+      warehouses: new Set<string>(),
     }
     cur.min = Math.min(cur.min, price)
-    cur.almacenes.add(r.almacen_id)
-    map.set(r.producto_id, cur)
+    cur.warehouses.add(r.warehouse_id)
+    map.set(r.product_id, cur)
   }
   return map
 }
 
-function isSectorTipo(s: string): s is SectorTipo {
-  return s === 'cafe' || s === 'ganaderia' || s === 'cacao' || s === 'otro'
+function isSectorType(s: string): s is SectorType {
+  return s === 'coffee' || s === 'livestock' || s === 'cocoa' || s === 'other'
 }
 
-export async function listarCategoriasActivas(): Promise<
-  { id: string; nombre: string; orden: number }[]
+export async function listActiveCategories(): Promise<
+  { id: string; name: string; sort_order: number }[]
 > {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('categorias')
-    .select('id, nombre, orden')
-    .eq('activo', true)
-    .order('orden', { ascending: true })
+    .from('categories')
+    .select('id, name, sort_order')
+    .eq('active', true)
+    .order('sort_order', { ascending: true })
 
   if (error) throw new Error(error.message)
   return (data ?? []).map((r) => ({
     id: r.id as string,
-    nombre: r.nombre as string,
-    orden: Number(r.orden),
+    name: r.name as string,
+    sort_order: Number(r.sort_order),
   }))
 }
 
-export async function listarProductosResumen(params: {
-  sector?: SectorTipo
-  categoriaId?: string | null
-}): Promise<ProductoListado[]> {
-  const sector = params.sector ?? 'cafe'
+export async function listProductSummaries(params: {
+  sector?: SectorType
+  categoryId?: string | null
+}): Promise<ProductSummary[]> {
+  const sector = params.sector ?? 'coffee'
   const supabase = await createClient()
 
   let q = supabase
-    .from('productos')
+    .from('products')
     .select(
-      'id, nombre, nombre_corto, presentacion, unidad_medida, categoria_id, sector, metadata, categorias ( nombre )'
+      'id, name, short_name, presentation, unit_of_measure, category_id, sector, metadata, categories ( name )'
     )
-    .eq('activo', true)
+    .eq('active', true)
     .eq('sector', sector)
 
-  if (params.categoriaId) {
-    q = q.eq('categoria_id', params.categoriaId)
+  if (params.categoryId) {
+    q = q.eq('category_id', params.categoryId)
   }
 
-  const { data: productos, error: e1 } = await q.order('nombre', {
+  const { data: products, error: e1 } = await q.order('name', {
     ascending: true,
   })
   if (e1) throw new Error(e1.message)
 
-  const { data: precios, error: e2 } = await supabase
-    .from('precios')
-    .select('producto_id, almacen_id, precio_unitario')
-    .eq('disponible', true)
+  const { data: prices, error: e2 } = await supabase
+    .from('prices')
+    .select('product_id, warehouse_id, unit_price')
+    .eq('is_available', true)
 
   if (e2) throw new Error(e2.message)
 
-  const agg = aggregatePrecios((precios ?? []) as PrecioRow[])
-  const rows = (productos ?? []) as unknown as ProductoRow[]
+  const agg = aggregatePrices((prices ?? []) as PriceRow[])
+  const rows = (products ?? []) as unknown as ProductRow[]
 
-  const list: ProductoListado[] = []
+  const list: ProductSummary[] = []
   for (const p of rows) {
     const a = agg.get(p.id)
     if (!a || a.min === Number.POSITIVE_INFINITY) continue
     list.push({
       id: p.id,
-      nombre: p.nombre,
-      nombre_corto: p.nombre_corto,
-      presentacion: p.presentacion,
-      unidad_medida: p.unidad_medida,
-      categoria_id: p.categoria_id,
-      categoria_nombre: p.categorias?.nombre ?? null,
-      foto_url: extractFotoUrl(p.metadata),
-      precio_desde: a.min,
-      almacenes_count: a.almacenes.size,
+      name: p.name,
+      short_name: p.short_name,
+      presentation: p.presentation,
+      unit_of_measure: p.unit_of_measure,
+      category_id: p.category_id,
+      category_name: p.categories?.name ?? null,
+      photo_url: extractPhotoUrl(p.metadata),
+      price_from: a.min,
+      warehouse_count: a.warehouses.size,
     })
   }
 
   return list
 }
 
-export async function buscarProductosConDistancia(params: {
+export async function searchProductsWithDistance(params: {
   lat: number
   lng: number
-  busqueda?: string | null
-  categoriaId?: string | null
-  sector?: SectorTipo
-}): Promise<ProductoListado[]> {
+  search?: string | null
+  categoryId?: string | null
+  sector?: SectorType
+}): Promise<ProductSummary[]> {
   const supabase = await createClient()
-  const sector = params.sector ?? 'cafe'
+  const sector = params.sector ?? 'coffee'
 
-  const { data, error } = await supabase.rpc('productos_con_distancia', {
+  const { data, error } = await supabase.rpc('products_with_distance', {
     p_lat: params.lat,
     p_lng: params.lng,
-    p_busqueda: params.busqueda?.trim() || null,
-    p_categoria_id: params.categoriaId ?? null,
+    p_search: params.search?.trim() || null,
+    p_category_id: params.categoryId ?? null,
     p_sector: sector,
   })
 
@@ -156,271 +155,266 @@ export async function buscarProductosConDistancia(params: {
   }
 
   const rpcRows = (data ?? []) as {
-    producto_id: string
-    nombre: string
-    nombre_corto: string | null
-    presentacion: string | null
-    unidad_medida: string
-    categoria_id: string | null
-    precio_min: number | string
-    almacenes_con_precio: number | string
-    distancia_km_min: number | string | null
+    product_id: string
+    name: string
+    short_name: string | null
+    presentation: string | null
+    unit_of_measure: string
+    category_id: string | null
+    min_price: number | string
+    warehouses_with_price: number | string
+    min_distance_km: number | string | null
   }[]
 
   if (rpcRows.length === 0) return []
 
-  const categoriaIds = [
-    ...new Set(rpcRows.map((r) => r.categoria_id).filter(Boolean)),
+  const categoryIds = [
+    ...new Set(rpcRows.map((r) => r.category_id).filter(Boolean)),
   ] as string[]
 
   const catMap = new Map<string, string>()
-  if (categoriaIds.length > 0) {
+  if (categoryIds.length > 0) {
     const { data: cats, error: catErr } = await supabase
-      .from('categorias')
-      .select('id, nombre')
-      .in('id', categoriaIds)
+      .from('categories')
+      .select('id, name')
+      .in('id', categoryIds)
     if (catErr) throw new Error(catErr.message)
     for (const c of cats ?? []) {
-      catMap.set(c.id as string, c.nombre as string)
+      catMap.set(c.id as string, c.name as string)
     }
   }
 
   return rpcRows.map((r) => ({
-    id: r.producto_id,
-    nombre: r.nombre,
-    nombre_corto: r.nombre_corto,
-    presentacion: r.presentacion,
-    unidad_medida: r.unidad_medida,
-    categoria_id: r.categoria_id,
-    categoria_nombre: r.categoria_id ? catMap.get(r.categoria_id) ?? null : null,
-    foto_url: null, // La RPC no retorna metadata; se carga en detalle
-    precio_desde: Number(r.precio_min),
-    almacenes_count: Number(r.almacenes_con_precio),
-    distancia_km_min:
-      r.distancia_km_min != null ? Number(r.distancia_km_min) : undefined,
+    id: r.product_id,
+    name: r.name,
+    short_name: r.short_name,
+    presentation: r.presentation,
+    unit_of_measure: r.unit_of_measure,
+    category_id: r.category_id,
+    category_name: r.category_id ? catMap.get(r.category_id) ?? null : null,
+    photo_url: null,
+    price_from: Number(r.min_price),
+    warehouse_count: Number(r.warehouses_with_price),
+    min_distance_km:
+      r.min_distance_km != null ? Number(r.min_distance_km) : undefined,
   }))
 }
 
-export async function buscarProductosSoloTexto(params: {
-  busqueda: string
-  categoriaId?: string | null
-  sector?: SectorTipo
-}): Promise<ProductoListado[]> {
-  const sector = params.sector ?? 'cafe'
-  const safe = params.busqueda.trim().replace(/[%_]/g, ' ')
+export async function searchProductsTextOnly(params: {
+  search: string
+  categoryId?: string | null
+  sector?: SectorType
+}): Promise<ProductSummary[]> {
+  const sector = params.sector ?? 'coffee'
+  const safe = params.search.trim().replace(/[%_]/g, ' ')
   const supabase = await createClient()
 
   let q = supabase
-    .from('productos')
+    .from('products')
     .select(
-      'id, nombre, nombre_corto, presentacion, unidad_medida, categoria_id, sector, metadata, categorias ( nombre )'
+      'id, name, short_name, presentation, unit_of_measure, category_id, sector, metadata, categories ( name )'
     )
-    .eq('activo', true)
+    .eq('active', true)
     .eq('sector', sector)
-    .ilike('nombre', `%${safe}%`)
+    .ilike('name', `%${safe}%`)
 
-  if (params.categoriaId) {
-    q = q.eq('categoria_id', params.categoriaId)
+  if (params.categoryId) {
+    q = q.eq('category_id', params.categoryId)
   }
 
-  const { data: productos, error: e1 } = await q.order('nombre', {
+  const { data: products, error: e1 } = await q.order('name', {
     ascending: true,
   })
   if (e1) throw new Error(e1.message)
 
-  const { data: precios, error: e2 } = await supabase
-    .from('precios')
-    .select('producto_id, almacen_id, precio_unitario')
-    .eq('disponible', true)
+  const { data: prices, error: e2 } = await supabase
+    .from('prices')
+    .select('product_id, warehouse_id, unit_price')
+    .eq('is_available', true)
 
   if (e2) throw new Error(e2.message)
 
-  const agg = aggregatePrecios((precios ?? []) as PrecioRow[])
-  const rows = (productos ?? []) as unknown as ProductoRow[]
+  const agg = aggregatePrices((prices ?? []) as PriceRow[])
+  const rows = (products ?? []) as unknown as ProductRow[]
 
-  const list: ProductoListado[] = []
+  const list: ProductSummary[] = []
   for (const p of rows) {
     const a = agg.get(p.id)
     if (!a || a.min === Number.POSITIVE_INFINITY) continue
     list.push({
       id: p.id,
-      nombre: p.nombre,
-      nombre_corto: p.nombre_corto,
-      presentacion: p.presentacion,
-      unidad_medida: p.unidad_medida,
-      categoria_id: p.categoria_id,
-      categoria_nombre: p.categorias?.nombre ?? null,
-      foto_url: extractFotoUrl(p.metadata),
-      precio_desde: a.min,
-      almacenes_count: a.almacenes.size,
+      name: p.name,
+      short_name: p.short_name,
+      presentation: p.presentation,
+      unit_of_measure: p.unit_of_measure,
+      category_id: p.category_id,
+      category_name: p.categories?.name ?? null,
+      photo_url: extractPhotoUrl(p.metadata),
+      price_from: a.min,
+      warehouse_count: a.warehouses.size,
     })
   }
 
   return list
 }
 
-export type MejorPrecioPorProducto = Record<
+export type BestPriceByProduct = Record<
   string,
-  { almacenId: string; almacenNombre: string; precio: number }
+  { warehouse_id: string; warehouse_name: string; price: number }
 >
 
-/**
- * Devuelve el almacén con el precio más bajo para cada producto.
- * Se usa en el catálogo para el botón QuickAdd directo desde la lista.
- */
-export async function listarMejoresPreciosPorProducto(): Promise<MejorPrecioPorProducto> {
+export async function listBestPricesByProduct(): Promise<BestPriceByProduct> {
   const supabase = await createClient()
 
-  type PrecioAlmacenRow = {
-    producto_id: string
-    precio_unitario: number | string
-    almacen_id: string
-    almacenes: { nombre: string } | null
+  type Row = {
+    product_id: string
+    unit_price: number | string
+    warehouse_id: string
+    warehouses: { name: string } | null
   }
 
   const { data, error } = await supabase
-    .from('precios')
-    .select('producto_id, precio_unitario, almacen_id, almacenes ( nombre )')
-    .eq('disponible', true)
+    .from('prices')
+    .select('product_id, unit_price, warehouse_id, warehouses ( name )')
+    .eq('is_available', true)
 
   if (error) throw new Error(error.message)
 
-  const rows = (data ?? []) as unknown as PrecioAlmacenRow[]
-  const mejores: MejorPrecioPorProducto = {}
+  const rows = (data ?? []) as unknown as Row[]
+  const best: BestPriceByProduct = {}
 
   for (const r of rows) {
-    if (!r.almacenes) continue
-    const precio = Number(r.precio_unitario)
-    const existing = mejores[r.producto_id]
-    if (!existing || precio < existing.precio) {
-      mejores[r.producto_id] = {
-        almacenId: r.almacen_id,
-        almacenNombre: r.almacenes.nombre,
-        precio,
+    if (!r.warehouses) continue
+    const price = Number(r.unit_price)
+    const existing = best[r.product_id]
+    if (!existing || price < existing.price) {
+      best[r.product_id] = {
+        warehouse_id: r.warehouse_id,
+        warehouse_name: r.warehouses.name,
+        price,
       }
     }
   }
 
-  return mejores
+  return best
 }
 
-export function parseSector(q: string | null): SectorTipo {
-  if (q && isSectorTipo(q)) return q
-  return 'cafe'
+export function parseSectorQuery(q: string | null): SectorType {
+  if (q && isSectorType(q)) return q
+  return 'coffee'
 }
 
-export type PrecioEnAlmacen = {
-  precio_id: string
-  precio_unitario: number
-  almacen_id: string
-  almacen_nombre: string
-  municipio: string
-  departamento: string
-  telefono_whatsapp: string | null
+export type WarehousePriceRow = {
+  price_id: string
+  unit_price: number
+  warehouse_id: string
+  warehouse_name: string
+  municipality: string
+  department: string
+  whatsapp_phone: string | null
 }
 
-export type ProductoDetalle = {
+export type ProductDetail = {
   id: string
-  nombre: string
-  nombre_corto: string | null
-  marca: string | null
-  presentacion: string | null
-  unidad_medida: string
-  peso_kg: number | null
-  composicion: Record<string, number> | null
-  categoria_id: string | null
-  categoria_nombre: string | null
-  /** URL de foto del producto desde metadata.foto_url. Null si no tiene foto. */
-  foto_url: string | null
-  precios: PrecioEnAlmacen[]
+  name: string
+  short_name: string | null
+  brand: string | null
+  presentation: string | null
+  unit_of_measure: string
+  weight_kg: number | null
+  composition: Record<string, number> | null
+  category_id: string | null
+  category_name: string | null
+  photo_url: string | null
+  prices: WarehousePriceRow[]
 }
 
-export async function getProductoDetalle(
-  productoId: string
-): Promise<ProductoDetalle | null> {
+export async function getProductDetail(
+  productId: string
+): Promise<ProductDetail | null> {
   const supabase = await createClient()
   const { data: p, error: e1 } = await supabase
-    .from('productos')
+    .from('products')
     .select(
-      'id, nombre, nombre_corto, marca, presentacion, unidad_medida, peso_kg, composicion, metadata, categoria_id, categorias ( nombre )'
+      'id, name, short_name, brand, presentation, unit_of_measure, weight_kg, composition, metadata, category_id, categories ( name )'
     )
-    .eq('id', productoId)
-    .eq('activo', true)
+    .eq('id', productId)
+    .eq('active', true)
     .maybeSingle()
 
   if (e1) throw new Error(e1.message)
   if (!p) return null
 
-  const { data: precRows, error: e2 } = await supabase
-    .from('precios')
+  const { data: priceRows, error: e2 } = await supabase
+    .from('prices')
     .select(
-      'id, precio_unitario, almacen_id, almacenes ( id, nombre, municipio, departamento, telefono_whatsapp )'
+      'id, unit_price, warehouse_id, warehouses ( id, name, municipality, department, whatsapp_phone )'
     )
-    .eq('producto_id', productoId)
-    .eq('disponible', true)
-    .order('precio_unitario', { ascending: true })
+    .eq('product_id', productId)
+    .eq('is_available', true)
+    .order('unit_price', { ascending: true })
 
   if (e2) throw new Error(e2.message)
 
   type PRow = {
     id: string
-    precio_unitario: number | string
-    almacen_id: string
-    almacenes: {
+    unit_price: number | string
+    warehouse_id: string
+    warehouses: {
       id: string
-      nombre: string
-      municipio: string
-      departamento: string
-      telefono_whatsapp: string | null
+      name: string
+      municipality: string
+      department: string
+      whatsapp_phone: string | null
     } | null
   }
 
-  const precios: PrecioEnAlmacen[] = []
-  for (const row of (precRows ?? []) as unknown as PRow[]) {
-    if (!row.almacenes) continue
-    precios.push({
-      precio_id: row.id,
-      precio_unitario: Number(row.precio_unitario),
-      almacen_id: row.almacenes.id,
-      almacen_nombre: row.almacenes.nombre,
-      municipio: row.almacenes.municipio,
-      departamento: row.almacenes.departamento,
-      telefono_whatsapp: row.almacenes.telefono_whatsapp,
+  const prices: WarehousePriceRow[] = []
+  for (const row of (priceRows ?? []) as unknown as PRow[]) {
+    if (!row.warehouses) continue
+    prices.push({
+      price_id: row.id,
+      unit_price: Number(row.unit_price),
+      warehouse_id: row.warehouses.id,
+      warehouse_name: row.warehouses.name,
+      municipality: row.warehouses.municipality,
+      department: row.warehouses.department,
+      whatsapp_phone: row.warehouses.whatsapp_phone,
     })
   }
 
   const prow = p as unknown as {
     id: string
-    nombre: string
-    nombre_corto: string | null
-    marca: string | null
-    presentacion: string | null
-    unidad_medida: string
-    peso_kg: number | string | null
-    composicion: Record<string, unknown> | null
+    name: string
+    short_name: string | null
+    brand: string | null
+    presentation: string | null
+    unit_of_measure: string
+    weight_kg: number | string | null
+    composition: Record<string, unknown> | null
     metadata: Record<string, unknown> | null
-    categoria_id: string | null
-    categorias: { nombre: string } | null
+    category_id: string | null
+    categories: { name: string } | null
   }
 
-  const comp = prow.composicion
-  const composicion =
+  const comp = prow.composition
+  const composition =
     comp && typeof comp === 'object' && !Array.isArray(comp)
       ? (comp as Record<string, number>)
       : null
 
   return {
     id: prow.id,
-    nombre: prow.nombre,
-    nombre_corto: prow.nombre_corto,
-    marca: prow.marca,
-    presentacion: prow.presentacion,
-    unidad_medida: prow.unidad_medida,
-    peso_kg: prow.peso_kg != null ? Number(prow.peso_kg) : null,
-    composicion,
-    categoria_id: prow.categoria_id,
-    categoria_nombre: prow.categorias?.nombre ?? null,
-    foto_url: extractFotoUrl(prow.metadata),
-    precios,
+    name: prow.name,
+    short_name: prow.short_name,
+    brand: prow.brand,
+    presentation: prow.presentation,
+    unit_of_measure: prow.unit_of_measure,
+    weight_kg: prow.weight_kg != null ? Number(prow.weight_kg) : null,
+    composition,
+    category_id: prow.category_id,
+    category_name: prow.categories?.name ?? null,
+    photo_url: extractPhotoUrl(prow.metadata),
+    prices,
   }
 }

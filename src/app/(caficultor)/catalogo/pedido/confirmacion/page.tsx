@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { CheckCircle2, ShoppingBag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { obtenerPedidoParaUsuario } from '@/lib/pedidos/service'
+import { getOrderForUser } from '@/lib/pedidos/service'
 import { isUuid } from '@/lib/catalogo/uuid'
 import { PedidoEstadoRealtime } from '@/components/pedidos/PedidoEstadoRealtime'
-import type { PedidoEstado } from '@/types/database'
+import type { OrderStatus } from '@/types/database'
 import { formatCOP, formatFecha } from '@/lib/utils/format'
 
 type PageProps = {
@@ -28,8 +28,8 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
     redirect(`/login?next=${encodeURIComponent(`/catalogo/pedido/confirmacion?id=${id}`)}`)
   }
 
-  const rol = user.user_metadata?.rol as string | undefined
-  const data = await obtenerPedidoParaUsuario(id, user.id, rol)
+  const role = user.user_metadata?.role as string | undefined
+  const data = await getOrderForUser(id, user.id, role)
   if (!data) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
@@ -44,35 +44,37 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
     )
   }
 
-  const p = data.pedido as unknown as {
+  const o = data.order as unknown as {
     id: string
-    numero: string
-    estado: PedidoEstado
+    order_number: string
+    status: OrderStatus
     total: number | string
     subtotal: number | string
     created_at: string
-    almacenes: { nombre: string; municipio: string } | { nombre: string; municipio: string }[] | null
+    warehouses:
+      | { name: string; municipality: string }
+      | { name: string; municipality: string }[]
+      | null
   }
 
   const initialPayload = {
-    pedido: {
-      id: p.id,
-      numero: p.numero,
-      estado: p.estado,
-      total: p.total,
-      subtotal: p.subtotal,
-      created_at: p.created_at,
+    order: {
+      id: o.id,
+      order_number: o.order_number,
+      status: o.status,
+      total: o.total,
+      subtotal: o.subtotal,
+      created_at: o.created_at,
     },
   }
 
-  const almacenRaw = Array.isArray(p.almacenes) ? p.almacenes[0] : p.almacenes
-  const almacenNombre = almacenRaw?.nombre ?? null
-  const almacenMunicipio = almacenRaw?.municipio ?? null
+  const whRaw = Array.isArray(o.warehouses) ? o.warehouses[0] : o.warehouses
+  const almacenNombre = whRaw?.name ?? null
+  const almacenMunicipio = whRaw?.municipality ?? null
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
       <div className="mx-auto max-w-lg">
-        {/* Éxito */}
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D4E8D4]">
             <CheckCircle2 size={36} className="text-[#2D7A2D]" strokeWidth={1.5} />
@@ -83,14 +85,13 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
           </p>
         </div>
 
-        {/* Número de pedido */}
         <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
           <p className="text-sm text-[#736E64]">Número de pedido</p>
           <p className="mt-0.5 font-mono text-2xl font-bold text-[#2D7A2D]">
-            {p.numero}
+            {o.order_number}
           </p>
           <p className="mt-1 text-xs text-[#A39E94]">
-            {formatFecha(p.created_at)}
+            {formatFecha(o.created_at)}
           </p>
           {almacenNombre ? (
             <p className="mt-2 text-sm text-[#524E46]">
@@ -102,16 +103,14 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
             <p className="mt-1 text-sm text-[#524E46]">
               {data.items.length} producto{data.items.length !== 1 ? 's' : ''} ·{' '}
               <span className="tabular-nums font-semibold text-[#2D7A2D]">
-                {formatCOP(Number(p.subtotal))}
+                {formatCOP(Number(o.subtotal))}
               </span>
             </p>
           ) : null}
         </div>
 
-        {/* Estado en tiempo real */}
-        <PedidoEstadoRealtime pedidoId={p.id} initial={initialPayload} />
+        <PedidoEstadoRealtime orderId={o.id} initial={initialPayload} />
 
-        {/* Acciones */}
         <div className="mt-6 flex flex-col gap-3">
           <Link
             href="/catalogo"

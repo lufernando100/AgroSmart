@@ -8,13 +8,13 @@ import { formatCOP } from '@/lib/utils/format'
 import { MensajeError } from '@/components/ui/MensajeError'
 
 type Props = {
-  productoId: string
-  almacenId: string
-  productoNombre: string
-  almacenNombre: string
-  precioUnitario: number
-  presentacion: string | null
-  unidadMedida: string
+  productId: string
+  warehouseId: string
+  productName: string
+  warehouseName: string
+  unitPrice: number
+  presentation: string | null
+  unitOfMeasure: string
 }
 
 const CANTIDAD_MIN = 1
@@ -22,13 +22,13 @@ const CANTIDAD_MAX = 9_999
 const NOTAS_MAX = 500
 
 export function PedidoForm({
-  productoId,
-  almacenId,
-  productoNombre,
-  almacenNombre,
-  precioUnitario,
-  presentacion,
-  unidadMedida,
+  productId,
+  warehouseId,
+  productName,
+  warehouseName,
+  unitPrice,
+  presentation,
+  unitOfMeasure,
 }: Props) {
   const router = useRouter()
   const [cantidad, setCantidad] = useState(1)
@@ -71,10 +71,10 @@ export function PedidoForm({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          almacen_id: almacenId,
-          items: [{ producto_id: productoId, cantidad }],
-          notas: notas.trim() || undefined,
-          canal: 'pwa',
+          warehouse_id: warehouseId,
+          items: [{ product_id: productId, quantity: cantidad }],
+          notes: notas.trim() || undefined,
+          channel: 'pwa',
         }),
       })
       const json = (await res.json()) as { error?: string; id?: string }
@@ -92,7 +92,7 @@ export function PedidoForm({
     }
   }
 
-  const subtotal = precioUnitario * cantidad
+  const subtotal = unitPrice * cantidad
   const notasRestantes = NOTAS_MAX - notas.length
   const notasExcedidas = notas.length > NOTAS_MAX
 
@@ -105,20 +105,20 @@ export function PedidoForm({
             <Package size={22} className="text-[#736E64]" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="font-semibold text-[#252320]">{productoNombre}</p>
+            <p className="font-semibold text-[#252320]">{productName}</p>
             <p className="text-sm text-[#736E64]">
-              {[presentacion, unidadMedida].filter(Boolean).join(' · ')}
+              {[presentation, unitOfMeasure].filter(Boolean).join(' · ')}
             </p>
           </div>
         </div>
 
         <div className="mt-3 flex items-center gap-2 border-t border-[#E8E4DD] pt-3 text-sm text-[#736E64]">
           <Store size={14} aria-hidden />
-          <span>{almacenNombre}</span>
+          <span>{warehouseName}</span>
         </div>
 
         <p className="mt-2 tabular-nums text-2xl font-bold text-[#2D7A2D]">
-          {formatCOP(precioUnitario)}{' '}
+          {formatCOP(unitPrice)}{' '}
           <span className="text-sm font-normal text-[#736E64]">/ unidad</span>
         </p>
       </div>
@@ -197,7 +197,7 @@ export function PedidoForm({
       <div className="rounded-xl border border-[#A8D1A8] bg-[#F0F7F0] p-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-[#236023]">
-            {cantidad} × {formatCOP(precioUnitario)}
+            {cantidad} × {formatCOP(unitPrice)}
           </span>
           <span className="tabular-nums text-xl font-bold text-[#2D7A2D]">
             {formatCOP(subtotal)}
@@ -231,7 +231,7 @@ export function PedidoForm({
             : `Pedir ${cantidad} bulto${cantidad !== 1 ? 's' : ''} — ${formatCOP(subtotal)}`}
         </button>
         <Link
-          href={`/catalogo/${productoId}`}
+          href={`/catalogo/${productId}`}
           className="flex h-12 items-center justify-center rounded-xl border border-[#D4CEC4] text-base font-medium text-[#524E46]"
         >
           Cancelar

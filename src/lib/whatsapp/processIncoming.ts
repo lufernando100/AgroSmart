@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buscarUsuarioPorTelefono } from '@/lib/usuarios/lookup'
+import { findUserByPhoneDigits } from '@/lib/users/lookup'
 import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
 import { intentarProcesarSiNoAlmacen } from '@/lib/whatsapp/almacenRespuesta'
 import { obtenerUrlMediaWhatsApp } from '@/lib/whatsapp/media'
@@ -65,7 +65,7 @@ async function flujoCaficultor(
   whatsappMessageId?: string
 ) {
   const digits = telefonoFrom.replace(/\D/g, '')
-  const usuario = await buscarUsuarioPorTelefono(digits)
+  const usuario = await findUserByPhoneDigits(digits)
   if (!usuario) {
     await enviarMensajeWhatsApp(
       telefonoFrom,
@@ -75,27 +75,27 @@ async function flujoCaficultor(
   }
 
   const admin = createAdminClient()
-  await admin.from('conversaciones').insert({
-    usuario_id: usuario.id,
-    canal: 'whatsapp',
+  await admin.from('conversations').insert({
+    user_id: usuario.id,
+    channel: 'whatsapp',
     whatsapp_message_id: whatsappMessageId ?? null,
-    rol: 'user',
-    contenido: texto,
-    contenido_tipo: 'texto',
+    role: 'user',
+    content: texto,
+    content_type: 'text',
   })
 
   const respuesta = await runClaudeParaWhatsApp({
-    caficultorId: usuario.id,
+    farmerId: usuario.id,
     textoUsuario: texto,
   })
 
   await enviarMensajeWhatsApp(telefonoFrom, respuesta)
 
-  await admin.from('conversaciones').insert({
-    usuario_id: usuario.id,
-    canal: 'whatsapp',
-    rol: 'assistant',
-    contenido: respuesta,
-    contenido_tipo: 'texto',
+  await admin.from('conversations').insert({
+    user_id: usuario.id,
+    channel: 'whatsapp',
+    role: 'assistant',
+    content: respuesta,
+    content_type: 'text',
   })
 }

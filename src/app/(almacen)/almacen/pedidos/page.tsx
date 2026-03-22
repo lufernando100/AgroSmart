@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { listarPedidosAlmacen } from '@/lib/pedidos/service'
+import { listWarehouseOrders } from '@/lib/pedidos/service'
 import { PedidosTabs } from './PedidosTabs'
 
 export default async function AlmacenPedidosPage() {
@@ -12,7 +12,7 @@ export default async function AlmacenPedidosPage() {
     return null
   }
 
-  const pedidos = await listarPedidosAlmacen(user.id)
+  const pedidos = await listWarehouseOrders(user.id)
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">

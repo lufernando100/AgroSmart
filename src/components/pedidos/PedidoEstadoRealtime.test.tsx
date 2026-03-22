@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
-// Mock Supabase client
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     channel: () => ({
@@ -17,10 +16,10 @@ vi.mock('@/lib/supabase/client', () => ({
 import { PedidoEstadoRealtime } from './PedidoEstadoRealtime'
 
 const INITIAL = {
-  pedido: {
+  order: {
     id: 'ped-1',
-    numero: 'GV-00042',
-    estado: 'pendiente' as const,
+    order_number: 'GV-00042',
+    status: 'pending' as const,
     total: 168000,
     subtotal: 168000,
     created_at: '2026-03-21T10:00:00Z',
@@ -29,59 +28,57 @@ const INITIAL = {
 
 describe('PedidoEstadoRealtime', () => {
   it('muestra el estado inicial', () => {
-    render(<PedidoEstadoRealtime pedidoId="ped-1" initial={INITIAL} />)
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={INITIAL} />)
     expect(screen.getByText('Pendiente de confirmación')).toBeInTheDocument()
   })
 
   it('muestra el total formateado', () => {
-    render(<PedidoEstadoRealtime pedidoId="ped-1" initial={INITIAL} />)
-    // El total se formatea como COP
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={INITIAL} />)
     const totalEl = screen.getByText(/168/i)
     expect(totalEl).toBeInTheDocument()
   })
 
   it('muestra label para estado confirmado', () => {
     const confirmado = {
-      pedido: {
-        ...INITIAL.pedido,
-        estado: 'confirmado' as const,
+      order: {
+        ...INITIAL.order,
+        status: 'confirmed' as const,
       },
     }
-    render(<PedidoEstadoRealtime pedidoId="ped-1" initial={confirmado} />)
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={confirmado} />)
     expect(screen.getByText('Confirmado por el almacén')).toBeInTheDocument()
   })
 
   it('muestra label para estado rechazado', () => {
     const rechazado = {
-      pedido: {
-        ...INITIAL.pedido,
-        estado: 'rechazado' as const,
+      order: {
+        ...INITIAL.order,
+        status: 'rejected' as const,
       },
     }
-    render(<PedidoEstadoRealtime pedidoId="ped-1" initial={rechazado} />)
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={rechazado} />)
     expect(screen.getByText('Rechazado por el almacén')).toBeInTheDocument()
   })
 
-
   it('muestra label para estado entregado', () => {
     const entregado = {
-      pedido: {
-        ...INITIAL.pedido,
-        estado: 'entregado' as const,
+      order: {
+        ...INITIAL.order,
+        status: 'delivered' as const,
       },
     }
-    render(<PedidoEstadoRealtime pedidoId="ped-1" initial={entregado} />)
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={entregado} />)
     expect(screen.getByText('Entregado')).toBeInTheDocument()
   })
 
   it('muestra label para estado cancelado', () => {
     const cancelado = {
-      pedido: {
-        ...INITIAL.pedido,
-        estado: 'cancelado' as const,
+      order: {
+        ...INITIAL.order,
+        status: 'cancelled' as const,
       },
     }
-    render(<PedidoEstadoRealtime pedidoId="ped-1" initial={cancelado} />)
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={cancelado} />)
     expect(screen.getByText('Cancelado')).toBeInTheDocument()
   })
 })

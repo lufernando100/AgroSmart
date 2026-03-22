@@ -6,13 +6,13 @@ import { Plus, Minus, ShoppingBag, X, Loader2 } from 'lucide-react'
 import { formatCOP } from '@/lib/utils/format'
 
 type Props = {
-  productoId: string
-  almacenId: string
-  almacenNombre: string
-  precioUnitario: number
-  productoNombre: string
-  /** Callback para cuando el pedido se crea exitosamente */
-  onPedidoCreado?: (pedidoId: string) => void
+  productId: string
+  warehouseId: string
+  warehouseName: string
+  unitPrice: number
+  productName: string
+  /** Callback cuando el pedido se crea exitosamente */
+  onOrderCreated?: (orderId: string) => void
 }
 
 type Estado = 'idle' | 'open' | 'loading' | 'ok' | 'error'
@@ -22,12 +22,12 @@ type Estado = 'idle' | 'open' | 'loading' | 'ok' | 'error'
  * del catálogo, sin navegar al detalle. Reduce el flujo de compra de 4 taps a 3.
  */
 export function QuickAdd({
-  productoId,
-  almacenId,
-  almacenNombre,
-  precioUnitario,
-  productoNombre,
-  onPedidoCreado,
+  productId,
+  warehouseId,
+  warehouseName,
+  unitPrice,
+  productName,
+  onOrderCreated,
 }: Props) {
   const router = useRouter()
   const [estado, setEstado] = useState<Estado>('idle')
@@ -86,9 +86,9 @@ export function QuickAdd({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          almacen_id: almacenId,
-          items: [{ producto_id: productoId, cantidad }],
-          canal: 'pwa',
+          warehouse_id: warehouseId,
+          items: [{ product_id: productId, quantity: cantidad }],
+          channel: 'pwa',
         }),
       })
       const json = (await res.json()) as { error?: string; id?: string }
@@ -99,8 +99,7 @@ export function QuickAdd({
       }
       setEstado('ok')
       if (json.id) {
-        onPedidoCreado?.(json.id)
-        // Pequeña pausa para mostrar el tick antes de navegar
+        onOrderCreated?.(json.id)
         setTimeout(() => {
           router.push(`/catalogo/pedido/confirmacion?id=${encodeURIComponent(json.id!)}`)
         }, 600)
@@ -111,13 +110,13 @@ export function QuickAdd({
     }
   }
 
-  const subtotal = precioUnitario * cantidad
+  const subtotal = unitPrice * cantidad
 
   if (estado === 'idle') {
     return (
       <button
         type="button"
-        aria-label={`Agregar ${productoNombre} al pedido`}
+        aria-label={`Agregar ${productName} al pedido`}
         onClick={abrir}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2D7A2D] text-white shadow-md transition-all active:scale-90 hover:bg-[#236023] hover:shadow-lg"
       >
@@ -131,15 +130,15 @@ export function QuickAdd({
       ref={drawerRef}
       role="dialog"
       aria-modal="true"
-      aria-label={`Agregar ${productoNombre}`}
+      aria-label={`Agregar ${productName}`}
       onClick={(e) => e.stopPropagation()}
       className="absolute inset-x-0 bottom-0 z-20 rounded-b-xl border-t border-[#E8E4DD] bg-white p-4 shadow-[0_-4px_24px_rgba(18,17,16,0.12)] transition-all duration-200 translate-y-0 opacity-100"
     >
       {/* Encabezado */}
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-semibold text-[#252320] leading-tight">{productoNombre}</p>
-          <p className="text-xs text-[#736E64]">{almacenNombre}</p>
+          <p className="text-sm font-semibold text-[#252320] leading-tight">{productName}</p>
+          <p className="text-xs text-[#736E64]">{warehouseName}</p>
         </div>
         <button
           type="button"
@@ -186,7 +185,7 @@ export function QuickAdd({
             {formatCOP(subtotal)}
           </p>
           <p className="text-xs text-[#A39E94]">
-            {formatCOP(precioUnitario)} / bulto
+            {formatCOP(unitPrice)} / bulto
           </p>
         </div>
       </div>

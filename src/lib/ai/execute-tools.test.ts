@@ -13,17 +13,17 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 vi.mock('@/lib/pedidos/service', () => ({
-  crearPedidoAdmin: vi.fn().mockResolvedValue({
-    pedidoId: 'ped-1',
-    numero: 'GV-00001',
+  createOrderAdmin: vi.fn().mockResolvedValue({
+    orderId: 'ped-1',
+    orderNumber: 'GV-00001',
     subtotal: 168000,
     total: 168000,
   }),
 }))
 
 vi.mock('@/lib/catalogo/queries', () => ({
-  buscarProductosSoloTexto: vi.fn().mockResolvedValue([
-    { id: 'p1', nombre: 'Fertilizante 25-4-24', precio_min: 168000 },
+  searchProductsTextOnly: vi.fn().mockResolvedValue([
+    { id: 'p1', name: 'Fertilizante 25-4-24', price_from: 168000 },
   ]),
 }))
 
@@ -32,11 +32,11 @@ vi.mock('@/lib/whatsapp/send', () => ({
 }))
 
 import { ejecutarTool } from './execute-tools'
-import { buscarProductosSoloTexto } from '@/lib/catalogo/queries'
+import { searchProductsTextOnly } from '@/lib/catalogo/queries'
 
 const CONTEXTO = {
-  caficultorId: 'caf-uuid-123',
-  canal: 'whatsapp' as const,
+  farmerId: 'caf-uuid-123',
+  channel: 'whatsapp' as const,
 }
 
 describe('ejecutarTool', () => {
@@ -52,9 +52,9 @@ describe('ejecutarTool', () => {
         contexto: CONTEXTO,
       })
       expect(result.name).toBe('buscar_productos')
-      expect(buscarProductosSoloTexto).toHaveBeenCalledWith({
-        busqueda: 'fertilizante',
-        sector: 'cafe',
+      expect(searchProductsTextOnly).toHaveBeenCalledWith({
+        search: 'fertilizante',
+        sector: 'coffee',
       })
       const data = result.result as { productos: unknown[] }
       expect(data.productos).toHaveLength(1)
@@ -81,9 +81,9 @@ describe('ejecutarTool', () => {
     it('limita resultados a 15', async () => {
       const muchos = Array.from({ length: 20 }, (_, i) => ({
         id: `p${i}`,
-        nombre: `Producto ${i}`,
+        name: `Producto ${i}`,
       }))
-      vi.mocked(buscarProductosSoloTexto).mockResolvedValueOnce(muchos as never)
+      vi.mocked(searchProductsTextOnly).mockResolvedValueOnce(muchos as never)
 
       const result = await ejecutarTool({
         name: 'buscar_productos',

@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server'
 import {
-  buscarProductosConDistancia,
-  buscarProductosSoloTexto,
-  listarProductosResumen,
-  parseSector,
-  type ProductoListado,
+  searchProductsWithDistance,
+  searchProductsTextOnly,
+  listProductSummaries,
+  parseSectorQuery,
+  type ProductSummary,
 } from '@/lib/catalogo/queries'
 import { isUuid } from '@/lib/catalogo/uuid'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const sector = parseSector(searchParams.get('sector'))
+    const sector = parseSectorQuery(searchParams.get('sector'))
     const rawCat = searchParams.get('categoria_id')
-    const categoriaId =
+    const categoryId =
       rawCat && isUuid(rawCat) ? rawCat : null
     const q = searchParams.get('q')?.trim() ?? ''
 
@@ -27,43 +27,43 @@ export async function GET(request: Request) {
       Math.abs(latn) <= 90 &&
       Math.abs(lngn) <= 180
 
-    const catFilter = categoriaId ?? undefined
+    const catFilter = categoryId ?? undefined
 
-    let data: ProductoListado[]
+    let data: ProductSummary[]
 
     if (hasCoords) {
       try {
-        data = await buscarProductosConDistancia({
+        data = await searchProductsWithDistance({
           lat: latn,
           lng: lngn,
-          busqueda: q || null,
-          categoriaId,
+          search: q || null,
+          categoryId,
           sector,
         })
       } catch {
         if (q) {
-          data = await buscarProductosSoloTexto({
-            busqueda: q,
-            categoriaId,
+          data = await searchProductsTextOnly({
+            search: q,
+            categoryId,
             sector,
           })
         } else {
-          data = await listarProductosResumen({
+          data = await listProductSummaries({
             sector,
-            categoriaId: catFilter,
+            categoryId: catFilter,
           })
         }
       }
     } else if (q) {
-      data = await buscarProductosSoloTexto({
-        busqueda: q,
-        categoriaId,
+      data = await searchProductsTextOnly({
+        search: q,
+        categoryId,
         sector,
       })
     } else {
-      data = await listarProductosResumen({
+      data = await listProductSummaries({
         sector,
-        categoriaId: catFilter,
+        categoryId: catFilter,
       })
     }
 

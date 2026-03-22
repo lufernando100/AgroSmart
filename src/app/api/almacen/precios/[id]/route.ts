@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { actualizarPrecioAlmacen } from '@/lib/almacen/precios'
+import { updateWarehousePrice } from '@/lib/almacen/precios'
 import { isUuid } from '@/lib/catalogo/uuid'
 
 type PatchBody = {
-  precio_unitario?: number
-  disponible?: boolean
+  unit_price?: number
+  is_available?: boolean
 }
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -30,8 +30,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
     }
 
-    const rol = user.user_metadata?.rol as string | undefined
-    if (rol !== 'almacen' && rol !== 'admin') {
+    const role = user.user_metadata?.role as string | undefined
+    if (role !== 'warehouse' && role !== 'admin') {
       return NextResponse.json({ error: 'No permitido.' }, { status: 403 })
     }
 
@@ -47,23 +47,23 @@ export async function PATCH(
     }
 
     const body = json as PatchBody
-    const precio =
-      typeof body.precio_unitario === 'number' ? body.precio_unitario : undefined
-    const disponible =
-      typeof body.disponible === 'boolean' ? body.disponible : undefined
+    const unit_price =
+      typeof body.unit_price === 'number' ? body.unit_price : undefined
+    const is_available =
+      typeof body.is_available === 'boolean' ? body.is_available : undefined
 
-    if (precio === undefined && disponible === undefined) {
+    if (unit_price === undefined && is_available === undefined) {
       return NextResponse.json(
-        { error: 'Envía precio_unitario o disponible.' },
+        { error: 'Envía unit_price o is_available.' },
         { status: 400 }
       )
     }
 
-    await actualizarPrecioAlmacen({
-      usuarioAlmacenId: user.id,
-      precioId: id,
-      precio_unitario: precio,
-      disponible,
+    await updateWarehousePrice({
+      warehouseUserId: user.id,
+      priceId: id,
+      unit_price,
+      is_available,
     })
 
     return NextResponse.json({ ok: true })

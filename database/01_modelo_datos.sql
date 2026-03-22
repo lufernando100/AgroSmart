@@ -1,596 +1,575 @@
 -- ============================================================
--- GRANOVIVO (nombre provisional) - Modelo de datos completo
--- Supabase / PostgreSQL
--- Ejecutar en orden - las tablas tienen dependencias
+-- GranoVivo — full data model (English identifiers)
+-- Supabase / PostgreSQL — run scripts in dependency order
 -- ============================================================
 
--- ============================================================
--- EXTENSIONES
--- ============================================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "postgis";  -- Para georreferenciacion
+CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- ============================================================
 -- ENUMS
 -- ============================================================
-CREATE TYPE sector_tipo AS ENUM ('cafe', 'ganaderia', 'cacao', 'otro');
-CREATE TYPE usuario_rol AS ENUM ('caficultor', 'almacen', 'admin', 'cooperativa');
-CREATE TYPE pedido_estado AS ENUM ('pendiente', 'confirmado', 'rechazado', 'entregado', 'cancelado');
-CREATE TYPE precio_origen AS ENUM ('manual', 'foto_whatsapp', 'integracion_api', 'referencia_sipsa');
-CREATE TYPE gasto_categoria AS ENUM ('fertilizante', 'agroquimico', 'herramienta', 'mano_de_obra', 'transporte', 'semilla', 'otro');
-CREATE TYPE cultivo_etapa AS ENUM ('almacigo', 'levante', 'produccion', 'zoca');
-CREATE TYPE lote_estado AS ENUM ('recien_sembrado', 'en_produccion', 'para_renovar', 'renovado');
-CREATE TYPE alerta_tipo AS ENUM ('clima', 'plaga', 'precio', 'fertilizacion', 'cosecha', 'general');
-CREATE TYPE conversacion_canal AS ENUM ('whatsapp', 'pwa');
-CREATE TYPE nutriente_nivel AS ENUM ('bajo', 'medio', 'alto');
+CREATE TYPE sector_type AS ENUM ('coffee', 'livestock', 'cocoa', 'other');
+CREATE TYPE user_role AS ENUM ('farmer', 'warehouse', 'admin', 'cooperative');
+CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'rejected', 'delivered', 'cancelled');
+CREATE TYPE price_origin AS ENUM ('manual', 'whatsapp_photo', 'api_integration', 'sipsa_reference');
+CREATE TYPE expense_category AS ENUM ('fertilizer', 'agrochemical', 'tool', 'labor', 'transport', 'seed', 'other');
+CREATE TYPE crop_stage AS ENUM ('nursery', 'establishment', 'production', 'stump');
+CREATE TYPE plot_status AS ENUM ('newly_planted', 'in_production', 'due_for_renewal', 'renewed');
+CREATE TYPE alert_type AS ENUM ('weather', 'pest', 'price', 'fertilization', 'harvest', 'general');
+CREATE TYPE channel AS ENUM ('whatsapp', 'pwa');
+CREATE TYPE nutrient_level AS ENUM ('low', 'medium', 'high');
 
 -- ============================================================
--- 1. USUARIOS (base para caficultores, almacenes, admins)
+-- 1. USERS
 -- ============================================================
-CREATE TABLE usuarios (
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    telefono VARCHAR(15) UNIQUE NOT NULL,  -- Login por OTP
-    nombre VARCHAR(200) NOT NULL,
-    cedula VARCHAR(20),
-    cedula_cafetera VARCHAR(20),
-    rol usuario_rol NOT NULL DEFAULT 'caficultor',
-    sector sector_tipo NOT NULL DEFAULT 'cafe',
+    phone VARCHAR(15) UNIQUE NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    national_id VARCHAR(20),
+    coffee_registry_id VARCHAR(20),
+    role user_role NOT NULL DEFAULT 'farmer',
+    sector sector_type NOT NULL DEFAULT 'coffee',
     avatar_url TEXT,
-    activo BOOLEAN DEFAULT true,
-    metadata JSONB DEFAULT '{}',  -- Datos flexibles por sector
+    active BOOLEAN DEFAULT true,
+    metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_usuarios_telefono ON usuarios(telefono);
-CREATE INDEX idx_usuarios_rol ON usuarios(rol);
-CREATE INDEX idx_usuarios_sector ON usuarios(sector);
+CREATE INDEX idx_users_phone ON users(phone);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_sector ON users(sector);
 
 -- ============================================================
--- 2. FINCAS
+-- 2. FARMS
 -- ============================================================
-CREATE TABLE fincas (
+CREATE TABLE farms (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    nombre VARCHAR(200) NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(200) NOT NULL,
     vereda VARCHAR(200),
-    municipio VARCHAR(100) NOT NULL,
-    departamento VARCHAR(100) NOT NULL,
-    altitud_msnm INTEGER,
-    ubicacion GEOGRAPHY(POINT, 4326),  -- PostGIS punto GPS
-    area_total_ha DECIMAL(10,2),
+    municipality VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    altitude_masl INTEGER,
+    location GEOGRAPHY(POINT, 4326),
+    total_area_ha DECIMAL(10,2),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_fincas_usuario ON fincas(usuario_id);
-CREATE INDEX idx_fincas_ubicacion ON fincas USING GIST(ubicacion);
-CREATE INDEX idx_fincas_departamento ON fincas(departamento);
+CREATE INDEX idx_farms_user ON farms(user_id);
+CREATE INDEX idx_farms_location ON farms USING GIST(location);
+CREATE INDEX idx_farms_department ON farms(department);
 
 -- ============================================================
--- 3. LOTES (dentro de una finca)
+-- 3. PLOTS (coffee lots)
 -- ============================================================
-CREATE TABLE lotes (
+CREATE TABLE plots (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    finca_id UUID NOT NULL REFERENCES fincas(id) ON DELETE CASCADE,
-    nombre VARCHAR(100) NOT NULL,  -- "Lote 1", "El Naranjo"
-    variedad VARCHAR(100),  -- Castillo, Caturra, Colombia, etc.
-    edad_anios DECIMAL(4,1),
-    densidad_plantas_ha INTEGER,
-    porcentaje_sombrio INTEGER CHECK (porcentaje_sombrio >= 0 AND porcentaje_sombrio <= 100),
+    farm_id UUID NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    variety VARCHAR(100),
+    age_years DECIMAL(4,1),
+    plant_density_per_ha INTEGER,
+    shade_percentage INTEGER CHECK (shade_percentage >= 0 AND shade_percentage <= 100),
     area_ha DECIMAL(10,2),
-    estado lote_estado DEFAULT 'en_produccion',
-    poligono GEOGRAPHY(POLYGON, 4326),  -- Perimetro del lote
-    etapa cultivo_etapa DEFAULT 'produccion',
-    ultima_floracion DATE,
-    fecha_estimada_cosecha DATE,  -- Calculada: floracion + 8 meses
-    fecha_fertilizacion DATE,  -- Calculada: cosecha - 2 meses
+    status plot_status DEFAULT 'in_production',
+    polygon GEOGRAPHY(POLYGON, 4326),
+    crop_stage crop_stage DEFAULT 'production',
+    last_flowering_date DATE,
+    estimated_harvest_date DATE,
+    fertilization_date DATE,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_lotes_finca ON lotes(finca_id);
+CREATE INDEX idx_plots_farm ON plots(farm_id);
 
 -- ============================================================
--- 4. ALMACENES (proveedores de insumos)
+-- 4. WAREHOUSES
 -- ============================================================
-CREATE TABLE almacenes (
+CREATE TABLE warehouses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID REFERENCES usuarios(id),  -- El dueno como usuario
-    nombre VARCHAR(200) NOT NULL,
-    nit VARCHAR(20),
-    telefono_whatsapp VARCHAR(15),  -- Para recibir pedidos
+    user_id UUID REFERENCES users(id),
+    name VARCHAR(200) NOT NULL,
+    tax_id VARCHAR(20),
+    whatsapp_phone VARCHAR(15),
     email VARCHAR(200),
-    municipio VARCHAR(100) NOT NULL,
-    departamento VARCHAR(100) NOT NULL,
-    direccion TEXT,
-    ubicacion GEOGRAPHY(POINT, 4326),
-    horario TEXT,
-    acepta_pedidos_digitales BOOLEAN DEFAULT true,
-    comision_porcentaje DECIMAL(4,2) DEFAULT 0,  -- Comision acordada
-    activo BOOLEAN DEFAULT true,
+    municipality VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    address TEXT,
+    location GEOGRAPHY(POINT, 4326),
+    hours_text TEXT,
+    accepts_digital_orders BOOLEAN DEFAULT true,
+    commission_percentage DECIMAL(4,2) DEFAULT 0,
+    active BOOLEAN DEFAULT true,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_almacenes_ubicacion ON almacenes USING GIST(ubicacion);
-CREATE INDEX idx_almacenes_departamento ON almacenes(departamento);
-CREATE INDEX idx_almacenes_municipio ON almacenes(municipio);
+CREATE INDEX idx_warehouses_location ON warehouses USING GIST(location);
+CREATE INDEX idx_warehouses_department ON warehouses(department);
+CREATE INDEX idx_warehouses_municipality ON warehouses(municipality);
 
 -- ============================================================
--- 5. CATEGORIAS DE PRODUCTOS
+-- 5. CATEGORIES
 -- ============================================================
-CREATE TABLE categorias (
+CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(100) NOT NULL,  -- Fertilizantes, Agroquimicos, Herramientas
-    sector sector_tipo NOT NULL DEFAULT 'cafe',
-    icono VARCHAR(50),
-    orden INTEGER DEFAULT 0,
-    activo BOOLEAN DEFAULT true
+    name VARCHAR(100) NOT NULL,
+    sector sector_type NOT NULL DEFAULT 'coffee',
+    icon VARCHAR(50),
+    sort_order INTEGER DEFAULT 0,
+    active BOOLEAN DEFAULT true
 );
 
 -- ============================================================
--- 6. PRODUCTOS (catalogo maestro)
+-- 6. PRODUCTS
 -- ============================================================
-CREATE TABLE productos (
+CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    categoria_id UUID REFERENCES categorias(id),
-    nombre VARCHAR(300) NOT NULL,  -- "Fertilizante 25-4-24"
-    nombre_corto VARCHAR(100),  -- "25-4-24"
-    marca VARCHAR(100),
-    presentacion VARCHAR(100),  -- "Bulto 50kg", "Litro", "Galon"
-    unidad_medida VARCHAR(20) NOT NULL,  -- kg, litro, unidad
-    peso_kg DECIMAL(10,2),
-    composicion JSONB,  -- {"N": 25, "P": 4, "K": 24, "Mg": 0, "S": 0}
-    descripcion TEXT,
-    imagen_url TEXT,
-    sector sector_tipo NOT NULL DEFAULT 'cafe',
-    activo BOOLEAN DEFAULT true,
+    category_id UUID REFERENCES categories(id),
+    name VARCHAR(300) NOT NULL,
+    short_name VARCHAR(100),
+    brand VARCHAR(100),
+    presentation VARCHAR(100),
+    unit_of_measure VARCHAR(20) NOT NULL,
+    weight_kg DECIMAL(10,2),
+    composition JSONB,
+    description TEXT,
+    image_url TEXT,
+    sector sector_type NOT NULL DEFAULT 'coffee',
+    active BOOLEAN DEFAULT true,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_productos_categoria ON productos(categoria_id);
-CREATE INDEX idx_productos_nombre ON productos USING GIN(to_tsvector('spanish', nombre));
-CREATE INDEX idx_productos_sector ON productos(sector);
+CREATE INDEX idx_products_category ON products(category_id);
+CREATE INDEX idx_products_name ON products USING GIN(to_tsvector('spanish', name));
+CREATE INDEX idx_products_sector ON products(sector);
 
 -- ============================================================
--- 7. PRECIOS (un producto en un almacen)
+-- 7. PRICES
 -- ============================================================
-CREATE TABLE precios (
+CREATE TABLE prices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID NOT NULL REFERENCES productos(id),
-    almacen_id UUID NOT NULL REFERENCES almacenes(id),
-    precio_unitario DECIMAL(12,2) NOT NULL,  -- En COP
-    precio_por_kg_nutriente DECIMAL(12,2),  -- Calculado
-    disponible BOOLEAN DEFAULT true,
-    stock_cantidad INTEGER,  -- NULL = no informado
-    origen precio_origen NOT NULL DEFAULT 'manual',
-    vigente_hasta TIMESTAMPTZ,  -- Vigencia de la cotizacion
-    actualizado_at TIMESTAMPTZ DEFAULT NOW(),
+    product_id UUID NOT NULL REFERENCES products(id),
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id),
+    unit_price DECIMAL(12,2) NOT NULL,
+    price_per_nutrient_kg DECIMAL(12,2),
+    is_available BOOLEAN DEFAULT true,
+    stock_quantity INTEGER,
+    origin price_origin NOT NULL DEFAULT 'manual',
+    valid_until TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(producto_id, almacen_id)
+    UNIQUE(product_id, warehouse_id)
 );
 
-CREATE INDEX idx_precios_producto ON precios(producto_id);
-CREATE INDEX idx_precios_almacen ON precios(almacen_id);
-CREATE INDEX idx_precios_actualizado ON precios(actualizado_at);
+CREATE INDEX idx_prices_product ON prices(product_id);
+CREATE INDEX idx_prices_warehouse ON prices(warehouse_id);
+CREATE INDEX idx_prices_updated ON prices(updated_at);
 
 -- ============================================================
--- 8. HISTORIAL DE PRECIOS
+-- 8. PRICE HISTORY
 -- ============================================================
-CREATE TABLE precios_historial (
+CREATE TABLE price_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID NOT NULL REFERENCES productos(id),
-    almacen_id UUID NOT NULL REFERENCES almacenes(id),
-    precio_unitario DECIMAL(12,2) NOT NULL,
-    origen precio_origen NOT NULL,
-    registrado_at TIMESTAMPTZ DEFAULT NOW()
+    product_id UUID NOT NULL REFERENCES products(id),
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id),
+    unit_price DECIMAL(12,2) NOT NULL,
+    origin price_origin NOT NULL,
+    recorded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_precios_hist_producto ON precios_historial(producto_id, registrado_at);
+CREATE INDEX idx_price_history_product ON price_history(product_id, recorded_at);
 
 -- ============================================================
--- 9. PEDIDOS
+-- 9. ORDERS
 -- ============================================================
-CREATE TABLE pedidos (
+CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    numero VARCHAR(20) UNIQUE NOT NULL,  -- GV-0001, GV-0002
-    caficultor_id UUID NOT NULL REFERENCES usuarios(id),
-    almacen_id UUID NOT NULL REFERENCES almacenes(id),
-    estado pedido_estado DEFAULT 'pendiente',
-    canal conversacion_canal NOT NULL,  -- whatsapp o pwa
+    order_number VARCHAR(20) UNIQUE NOT NULL,
+    farmer_id UUID NOT NULL REFERENCES users(id),
+    warehouse_id UUID NOT NULL REFERENCES warehouses(id),
+    status order_status DEFAULT 'pending',
+    channel channel NOT NULL,
     subtotal DECIMAL(12,2) NOT NULL,
-    comision DECIMAL(12,2) DEFAULT 0,
+    commission DECIMAL(12,2) DEFAULT 0,
     total DECIMAL(12,2) NOT NULL,
-    precio_confirmado_almacen DECIMAL(12,2),  -- Precio final confirmado
-    notas TEXT,
-    notas_almacen TEXT,  -- Razon de rechazo, comentarios
-    confirmado_at TIMESTAMPTZ,
-    entregado_at TIMESTAMPTZ,
+    warehouse_confirmed_price DECIMAL(12,2),
+    notes TEXT,
+    warehouse_notes TEXT,
+    confirmed_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_pedidos_caficultor ON pedidos(caficultor_id);
-CREATE INDEX idx_pedidos_almacen ON pedidos(almacen_id);
-CREATE INDEX idx_pedidos_estado ON pedidos(estado);
-CREATE INDEX idx_pedidos_fecha ON pedidos(created_at);
+CREATE INDEX idx_orders_farmer ON orders(farmer_id);
+CREATE INDEX idx_orders_warehouse ON orders(warehouse_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_created ON orders(created_at);
 
--- Secuencia para numeros de pedido
-CREATE SEQUENCE pedido_numero_seq START 1;
+CREATE SEQUENCE order_number_seq START 1;
 
 -- ============================================================
--- 10. ITEMS DEL PEDIDO
+-- 10. ORDER ITEMS
 -- ============================================================
-CREATE TABLE pedido_items (
+CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    pedido_id UUID NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
-    producto_id UUID NOT NULL REFERENCES productos(id),
-    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
-    precio_unitario DECIMAL(12,2) NOT NULL,  -- Precio al momento del pedido
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(id),
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    unit_price DECIMAL(12,2) NOT NULL,
     subtotal DECIMAL(12,2) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_pedido_items_pedido ON pedido_items(pedido_id);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
 
 -- ============================================================
--- 11. ANALISIS DE SUELO
+-- 11. SOIL ANALYSIS
 -- ============================================================
-CREATE TABLE analisis_suelo (
+CREATE TABLE soil_analysis (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lote_id UUID REFERENCES lotes(id),
-    finca_id UUID NOT NULL REFERENCES fincas(id),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    laboratorio VARCHAR(200),
-    fecha_analisis DATE,
-    fecha_registro TIMESTAMPTZ DEFAULT NOW(),
-    imagen_url TEXT,  -- Foto del resultado
-    canal conversacion_canal,  -- Por donde se subio
-
-    -- Valores del analisis
+    plot_id UUID REFERENCES plots(id),
+    farm_id UUID NOT NULL REFERENCES farms(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    lab_name VARCHAR(200),
+    analysis_date DATE,
+    registered_at TIMESTAMPTZ DEFAULT NOW(),
+    image_url TEXT,
+    input_channel channel,
     ph DECIMAL(4,2),
-    materia_organica DECIMAL(6,2),  -- Porcentaje
-    nitrogeno DECIMAL(8,2),
-    fosforo DECIMAL(8,2),  -- mg/kg (Bray II)
-    potasio DECIMAL(8,2),  -- cmol/kg
-    calcio DECIMAL(8,2),  -- cmol/kg
-    magnesio DECIMAL(8,2),  -- cmol/kg
-    aluminio DECIMAL(8,2),  -- cmol/kg
-    sodio DECIMAL(8,2),
-    azufre DECIMAL(8,2),  -- mg/kg
-    hierro DECIMAL(8,2),
-    cobre DECIMAL(8,2),
-    manganeso DECIMAL(8,2),
+    organic_matter DECIMAL(6,2),
+    nitrogen DECIMAL(8,2),
+    phosphorus DECIMAL(8,2),
+    potassium DECIMAL(8,2),
+    calcium DECIMAL(8,2),
+    magnesium DECIMAL(8,2),
+    aluminum DECIMAL(8,2),
+    sodium DECIMAL(8,2),
+    sulfur DECIMAL(8,2),
+    iron DECIMAL(8,2),
+    copper DECIMAL(8,2),
+    manganese DECIMAL(8,2),
     zinc DECIMAL(8,2),
-    boro DECIMAL(8,2),
-    cice DECIMAL(8,2),  -- Capacidad intercambio cationico
-    conductividad_electrica DECIMAL(8,2),
-
-    -- Interpretacion (generada por IA)
-    interpretacion JSONB,  -- {"ph": "acido", "fosforo": "bajo", "potasio": "medio", ...}
-    recomendacion JSONB,  -- {"grado": "25-4-24", "kg_ha": 1164, "fraccionamiento": 2, ...}
-    recomendacion_texto TEXT,  -- Explicacion en lenguaje sencillo
-
+    boron DECIMAL(8,2),
+    cec DECIMAL(8,2),
+    electrical_conductivity DECIMAL(8,2),
+    interpretation JSONB,
+    recommendation JSONB,
+    recommendation_text TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_analisis_usuario ON analisis_suelo(usuario_id);
-CREATE INDEX idx_analisis_finca ON analisis_suelo(finca_id);
-CREATE INDEX idx_analisis_lote ON analisis_suelo(lote_id);
+CREATE INDEX idx_soil_analysis_user ON soil_analysis(user_id);
+CREATE INDEX idx_soil_analysis_farm ON soil_analysis(farm_id);
+CREATE INDEX idx_soil_analysis_plot ON soil_analysis(plot_id);
 
 -- ============================================================
--- 12. GASTOS (costos de produccion)
+-- 12. EXPENSES
 -- ============================================================
-CREATE TABLE gastos (
+CREATE TABLE expenses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    finca_id UUID REFERENCES fincas(id),
-    lote_id UUID REFERENCES lotes(id),
-    pedido_id UUID REFERENCES pedidos(id),  -- Si viene del marketplace
-    categoria gasto_categoria NOT NULL,
-    descripcion VARCHAR(300),
-    monto DECIMAL(12,2) NOT NULL,
-    fecha DATE NOT NULL,
-    proveedor VARCHAR(200),
-    factura_imagen_url TEXT,
-    factura_datos JSONB,  -- Datos extraidos por IA de la foto
-    origen VARCHAR(20) DEFAULT 'manual',  -- 'marketplace', 'ocr', 'manual'
+    user_id UUID NOT NULL REFERENCES users(id),
+    farm_id UUID REFERENCES farms(id),
+    plot_id UUID REFERENCES plots(id),
+    order_id UUID REFERENCES orders(id),
+    category expense_category NOT NULL,
+    description VARCHAR(300),
+    amount DECIMAL(12,2) NOT NULL,
+    expense_date DATE NOT NULL,
+    supplier VARCHAR(200),
+    invoice_image_url TEXT,
+    invoice_data JSONB,
+    source VARCHAR(20) DEFAULT 'manual',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_gastos_usuario ON gastos(usuario_id);
-CREATE INDEX idx_gastos_finca ON gastos(finca_id);
-CREATE INDEX idx_gastos_fecha ON gastos(fecha);
-CREATE INDEX idx_gastos_categoria ON gastos(categoria);
+CREATE INDEX idx_expenses_user ON expenses(user_id);
+CREATE INDEX idx_expenses_farm ON expenses(farm_id);
+CREATE INDEX idx_expenses_date ON expenses(expense_date);
+CREATE INDEX idx_expenses_category ON expenses(category);
 
 -- ============================================================
--- 13. JORNALES (mano de obra)
+-- 13. LABOR ENTRIES
 -- ============================================================
-CREATE TABLE jornales (
+CREATE TABLE labor_entries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    finca_id UUID REFERENCES fincas(id),
-    lote_id UUID REFERENCES lotes(id),
-    trabajador_nombre VARCHAR(200) NOT NULL,
-    labor VARCHAR(100) NOT NULL,  -- Recoleccion, fertilizacion, fumigacion, poda, etc.
-    dias DECIMAL(4,1) NOT NULL,
-    pago_por_dia DECIMAL(10,2) NOT NULL,
-    pago_total DECIMAL(12,2) NOT NULL,
-    fecha_inicio DATE NOT NULL,
-    fecha_fin DATE,
-    notas TEXT,
+    user_id UUID NOT NULL REFERENCES users(id),
+    farm_id UUID REFERENCES farms(id),
+    plot_id UUID REFERENCES plots(id),
+    worker_name VARCHAR(200) NOT NULL,
+    task VARCHAR(100) NOT NULL,
+    days DECIMAL(4,1) NOT NULL,
+    pay_per_day DECIMAL(10,2) NOT NULL,
+    total_pay DECIMAL(12,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_jornales_usuario ON jornales(usuario_id);
-CREATE INDEX idx_jornales_fecha ON jornales(fecha_inicio);
+CREATE INDEX idx_labor_user ON labor_entries(user_id);
+CREATE INDEX idx_labor_start ON labor_entries(start_date);
 
 -- ============================================================
--- 14. FLORACIONES
+-- 14. FLOWERING RECORDS
 -- ============================================================
-CREATE TABLE floraciones (
+CREATE TABLE flowering_records (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lote_id UUID NOT NULL REFERENCES lotes(id),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    fecha_floracion DATE NOT NULL,
-    intensidad VARCHAR(20),  -- alta, media, baja
-    imagen_url TEXT,
-    fecha_estimada_cosecha DATE,  -- floracion + 8 meses
-    fecha_fertilizacion DATE,  -- cosecha - 2 meses
-    periodo_critico_broca_inicio DATE,  -- floracion + 120 dias (o 90 segun zona)
-    notas TEXT,
+    plot_id UUID NOT NULL REFERENCES plots(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    flowering_date DATE NOT NULL,
+    intensity VARCHAR(20),
+    image_url TEXT,
+    estimated_harvest_date DATE,
+    fertilization_date DATE,
+    borer_critical_period_start DATE,
+    notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_floraciones_lote ON floraciones(lote_id);
-CREATE INDEX idx_floraciones_fecha ON floraciones(fecha_floracion);
+CREATE INDEX idx_flowering_plot ON flowering_records(plot_id);
+CREATE INDEX idx_flowering_date ON flowering_records(flowering_date);
 
 -- ============================================================
--- 15. ALERTAS
+-- 15. ALERTS
 -- ============================================================
-CREATE TABLE alertas (
+CREATE TABLE alerts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    tipo alerta_tipo NOT NULL,
-    titulo VARCHAR(200) NOT NULL,
-    mensaje TEXT NOT NULL,
-    datos JSONB,  -- Datos estructurados de la alerta
-    enviada_por conversacion_canal,
-    leida BOOLEAN DEFAULT false,
-    enviada_at TIMESTAMPTZ DEFAULT NOW(),
-    leida_at TIMESTAMPTZ
+    user_id UUID NOT NULL REFERENCES users(id),
+    type alert_type NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    data JSONB,
+    sent_via channel,
+    is_read BOOLEAN DEFAULT false,
+    sent_at TIMESTAMPTZ DEFAULT NOW(),
+    read_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_alertas_usuario ON alertas(usuario_id);
-CREATE INDEX idx_alertas_tipo ON alertas(tipo);
-CREATE INDEX idx_alertas_leida ON alertas(usuario_id, leida);
+CREATE INDEX idx_alerts_user ON alerts(user_id);
+CREATE INDEX idx_alerts_type ON alerts(type);
+CREATE INDEX idx_alerts_is_read ON alerts(user_id, is_read);
 
 -- ============================================================
--- 16. CONVERSACIONES (historial del asistente IA)
+-- 16. CONVERSATIONS
 -- ============================================================
-CREATE TABLE conversaciones (
+CREATE TABLE conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    canal conversacion_canal NOT NULL,
-    whatsapp_message_id VARCHAR(100),  -- ID de Meta
-    rol VARCHAR(20) NOT NULL,  -- 'user', 'assistant', 'system'
-    contenido TEXT NOT NULL,
-    contenido_tipo VARCHAR(20) DEFAULT 'texto',  -- texto, imagen, audio, ubicacion
-    imagen_url TEXT,
+    user_id UUID NOT NULL REFERENCES users(id),
+    channel channel NOT NULL,
+    whatsapp_message_id VARCHAR(100),
+    role VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    content_type VARCHAR(20) DEFAULT 'text',
+    image_url TEXT,
     audio_url TEXT,
-    transcripcion TEXT,  -- Si fue nota de voz
-    tools_usadas JSONB,  -- Que funciones ejecuto el asistente
+    transcription TEXT,
+    tools_used JSONB,
     tokens_input INTEGER,
     tokens_output INTEGER,
-    costo_estimado DECIMAL(8,4),  -- USD
-    escalado_a_humano BOOLEAN DEFAULT false,
+    estimated_cost_usd DECIMAL(8,4),
+    escalated_to_human BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_conversaciones_usuario ON conversaciones(usuario_id, created_at);
-CREATE INDEX idx_conversaciones_canal ON conversaciones(canal);
-CREATE INDEX idx_conversaciones_escalado ON conversaciones(escalado_a_humano) WHERE escalado_a_humano = true;
+CREATE INDEX idx_conversations_user ON conversations(user_id, created_at);
+CREATE INDEX idx_conversations_channel ON conversations(channel);
+CREATE INDEX idx_conversations_escalated ON conversations(escalated_to_human) WHERE escalated_to_human = true;
 
 -- ============================================================
--- 17. COOPERATIVAS
+-- 17. COOPERATIVES
 -- ============================================================
-CREATE TABLE cooperativas (
+CREATE TABLE cooperatives (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(200) NOT NULL,
-    nit VARCHAR(20),
-    municipio VARCHAR(100),
-    departamento VARCHAR(100),
-    contacto_nombre VARCHAR(200),
-    contacto_telefono VARCHAR(15),
-    numero_asociados INTEGER,
-    activa BOOLEAN DEFAULT true,
+    name VARCHAR(200) NOT NULL,
+    tax_id VARCHAR(20),
+    municipality VARCHAR(100),
+    department VARCHAR(100),
+    contact_name VARCHAR(200),
+    contact_phone VARCHAR(15),
+    member_count INTEGER,
+    active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Relacion caficultor <-> cooperativa
-CREATE TABLE caficultor_cooperativa (
-    caficultor_id UUID REFERENCES usuarios(id),
-    cooperativa_id UUID REFERENCES cooperativas(id),
-    fecha_ingreso DATE DEFAULT CURRENT_DATE,
-    PRIMARY KEY (caficultor_id, cooperativa_id)
+CREATE TABLE farmer_cooperative (
+    farmer_id UUID REFERENCES users(id),
+    cooperative_id UUID REFERENCES cooperatives(id),
+    joined_at DATE DEFAULT CURRENT_DATE,
+    PRIMARY KEY (farmer_id, cooperative_id)
 );
 
 -- ============================================================
--- 18. TRAZABILIDAD EUDR
+-- 18. TRACEABILITY
 -- ============================================================
-CREATE TABLE trazabilidad (
+CREATE TABLE traceability (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lote_id UUID NOT NULL REFERENCES lotes(id),
-    usuario_id UUID NOT NULL REFERENCES usuarios(id),
-    periodo_cosecha VARCHAR(20),  -- "2026-A", "2026-B"
-    coordenadas_verificadas BOOLEAN DEFAULT false,
-    deforestacion_verificada BOOLEAN DEFAULT false,
-    fecha_verificacion_satelital DATE,
-    buenas_practicas JSONB,  -- {"fertilizacion_tecnica": true, "manejo_plagas": true, ...}
-    certificado_url TEXT,
-    qr_code TEXT,  -- Codigo QR unico
-    activo BOOLEAN DEFAULT true,
+    plot_id UUID NOT NULL REFERENCES plots(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    harvest_period VARCHAR(20),
+    coordinates_verified BOOLEAN DEFAULT false,
+    deforestation_verified BOOLEAN DEFAULT false,
+    satellite_verification_date DATE,
+    good_practices JSONB,
+    certificate_url TEXT,
+    qr_code TEXT,
+    active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_trazabilidad_lote ON trazabilidad(lote_id);
-CREATE INDEX idx_trazabilidad_qr ON trazabilidad(qr_code);
+CREATE INDEX idx_traceability_plot ON traceability(plot_id);
+CREATE INDEX idx_traceability_qr ON traceability(qr_code);
 
 -- ============================================================
--- 19. PRECIOS DE REFERENCIA SIPSA
+-- 19. REFERENCE PRICES (SIPSA)
 -- ============================================================
-CREATE TABLE precios_referencia (
+CREATE TABLE reference_prices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_nombre VARCHAR(300) NOT NULL,
-    departamento VARCHAR(100),
-    precio_promedio DECIMAL(12,2),
-    precio_minimo DECIMAL(12,2),
-    precio_maximo DECIMAL(12,2),
-    fuente VARCHAR(50) DEFAULT 'SIPSA',
-    fecha_reporte DATE NOT NULL,
+    product_name VARCHAR(300) NOT NULL,
+    department VARCHAR(100),
+    avg_price DECIMAL(12,2),
+    min_price DECIMAL(12,2),
+    max_price DECIMAL(12,2),
+    source VARCHAR(50) DEFAULT 'SIPSA',
+    report_date DATE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_precios_ref_producto ON precios_referencia(producto_nombre, fecha_reporte);
-CREATE INDEX idx_precios_ref_depto ON precios_referencia(departamento);
+CREATE INDEX idx_ref_prices_product ON reference_prices(product_name, report_date);
+CREATE INDEX idx_ref_prices_dept ON reference_prices(department);
 
 -- ============================================================
--- 20. COMPRAS COLECTIVAS (pools de demanda)
+-- 20. PURCHASE POOLS
 -- ============================================================
-CREATE TABLE pools_compra (
+CREATE TABLE purchase_pools (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID NOT NULL REFERENCES productos(id),
-    municipio VARCHAR(100) NOT NULL,
-    departamento VARCHAR(100) NOT NULL,
-    cantidad_total INTEGER DEFAULT 0,
-    cantidad_minima INTEGER NOT NULL,  -- Minimo para activar
-    precio_objetivo DECIMAL(12,2),  -- Precio negociado por volumen
-    fecha_limite TIMESTAMPTZ NOT NULL,
-    estado VARCHAR(20) DEFAULT 'abierto',  -- abierto, cerrado, completado, cancelado
+    product_id UUID NOT NULL REFERENCES products(id),
+    municipality VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    total_quantity INTEGER DEFAULT 0,
+    minimum_quantity INTEGER NOT NULL,
+    target_price DECIMAL(12,2),
+    deadline TIMESTAMPTZ NOT NULL,
+    state VARCHAR(20) DEFAULT 'open',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE pool_participantes (
-    pool_id UUID REFERENCES pools_compra(id) ON DELETE CASCADE,
-    usuario_id UUID REFERENCES usuarios(id),
-    cantidad INTEGER NOT NULL,
+CREATE TABLE pool_participants (
+    pool_id UUID REFERENCES purchase_pools(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
+    quantity INTEGER NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (pool_id, usuario_id)
+    PRIMARY KEY (pool_id, user_id)
 );
 
 -- ============================================================
--- FUNCIONES AUXILIARES
+-- FUNCTIONS & TRIGGERS
 -- ============================================================
-
--- Calcular distancia entre caficultor y almacen en km
-CREATE OR REPLACE FUNCTION distancia_km(punto1 GEOGRAPHY, punto2 GEOGRAPHY)
+CREATE OR REPLACE FUNCTION distance_km(point1 GEOGRAPHY, point2 GEOGRAPHY)
 RETURNS DECIMAL AS $$
-    SELECT ROUND((ST_Distance(punto1, punto2) / 1000)::NUMERIC, 1);
+    SELECT ROUND((ST_Distance(point1, point2) / 1000)::NUMERIC, 1);
 $$ LANGUAGE SQL IMMUTABLE;
 
--- Generar numero de pedido
-CREATE OR REPLACE FUNCTION generar_numero_pedido()
+CREATE OR REPLACE FUNCTION generate_order_number()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.numero := 'GV-' || LPAD(nextval('pedido_numero_seq')::TEXT, 5, '0');
+    NEW.order_number := 'GV-' || LPAD(nextval('order_number_seq')::TEXT, 5, '0');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tr_pedido_numero
-    BEFORE INSERT ON pedidos
+CREATE TRIGGER tr_order_number
+    BEFORE INSERT ON orders
     FOR EACH ROW
-    EXECUTE FUNCTION generar_numero_pedido();
+    EXECUTE FUNCTION generate_order_number();
 
--- Auto-registrar gasto cuando se confirma un pedido
-CREATE OR REPLACE FUNCTION registrar_gasto_pedido()
+CREATE OR REPLACE FUNCTION register_expense_on_order_confirm()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.estado = 'confirmado' AND OLD.estado = 'pendiente' THEN
-        INSERT INTO gastos (usuario_id, pedido_id, categoria, descripcion, monto, fecha, proveedor, origen)
+    IF NEW.status = 'confirmed' AND OLD.status = 'pending' THEN
+        INSERT INTO expenses (user_id, order_id, category, description, amount, expense_date, supplier, source)
         SELECT
-            NEW.caficultor_id,
+            NEW.farmer_id,
             NEW.id,
-            'fertilizante',  -- Default, se puede ajustar
-            'Pedido ' || NEW.numero,
-            COALESCE(NEW.precio_confirmado_almacen, NEW.total),
+            'fertilizer',
+            'Order ' || NEW.order_number,
+            COALESCE(NEW.warehouse_confirmed_price, NEW.total),
             CURRENT_DATE,
-            a.nombre,
+            w.name,
             'marketplace'
-        FROM almacenes a WHERE a.id = NEW.almacen_id;
+        FROM warehouses w WHERE w.id = NEW.warehouse_id;
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tr_gasto_automatico
-    AFTER UPDATE ON pedidos
+CREATE TRIGGER tr_expense_on_order
+    AFTER UPDATE ON orders
     FOR EACH ROW
-    EXECUTE FUNCTION registrar_gasto_pedido();
+    EXECUTE FUNCTION register_expense_on_order_confirm();
 
--- Guardar historial de precios cuando cambian
-CREATE OR REPLACE FUNCTION guardar_precio_historial()
+CREATE OR REPLACE FUNCTION save_price_history()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF OLD.precio_unitario IS DISTINCT FROM NEW.precio_unitario THEN
-        INSERT INTO precios_historial (producto_id, almacen_id, precio_unitario, origen)
-        VALUES (NEW.producto_id, NEW.almacen_id, NEW.precio_unitario, NEW.origen);
+    IF OLD.unit_price IS DISTINCT FROM NEW.unit_price THEN
+        INSERT INTO price_history (product_id, warehouse_id, unit_price, origin)
+        VALUES (NEW.product_id, NEW.warehouse_id, NEW.unit_price, NEW.origin);
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tr_precio_historial
-    AFTER UPDATE ON precios
+CREATE TRIGGER tr_price_history
+    AFTER UPDATE ON prices
     FOR EACH ROW
-    EXECUTE FUNCTION guardar_precio_historial();
+    EXECUTE FUNCTION save_price_history();
 
--- Calcular fechas desde floracion
-CREATE OR REPLACE FUNCTION calcular_fechas_floracion()
+CREATE OR REPLACE FUNCTION calculate_flowering_dates()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.fecha_estimada_cosecha := NEW.fecha_floracion + INTERVAL '8 months';
-    NEW.fecha_fertilizacion := NEW.fecha_estimada_cosecha - INTERVAL '2 months';
-    NEW.periodo_critico_broca_inicio := NEW.fecha_floracion + INTERVAL '120 days';
+    NEW.estimated_harvest_date := NEW.flowering_date + INTERVAL '8 months';
+    NEW.fertilization_date := NEW.estimated_harvest_date - INTERVAL '2 months';
+    NEW.borer_critical_period_start := NEW.flowering_date + INTERVAL '120 days';
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tr_floracion_fechas
-    BEFORE INSERT OR UPDATE ON floraciones
+CREATE TRIGGER tr_flowering_dates
+    BEFORE INSERT OR UPDATE ON flowering_records
     FOR EACH ROW
-    EXECUTE FUNCTION calcular_fechas_floracion();
+    EXECUTE FUNCTION calculate_flowering_dates();
 
 -- ============================================================
--- ROW LEVEL SECURITY (RLS)
--- Un caficultor solo ve sus datos, un almacen solo sus pedidos
+-- ROW LEVEL SECURITY
 -- ============================================================
+ALTER TABLE farms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE plots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE soil_analysis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE labor_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE flowering_records ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE fincas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lotes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pedidos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE gastos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE analisis_suelo ENABLE ROW LEVEL SECURITY;
-ALTER TABLE conversaciones ENABLE ROW LEVEL SECURITY;
-ALTER TABLE alertas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE jornales ENABLE ROW LEVEL SECURITY;
-ALTER TABLE floraciones ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "farmer_farms" ON farms FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "farmer_plots" ON plots FOR ALL USING (farm_id IN (SELECT id FROM farms WHERE user_id = auth.uid()));
+CREATE POLICY "farmer_orders" ON orders FOR ALL USING (farmer_id = auth.uid());
+CREATE POLICY "farmer_expenses" ON expenses FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "farmer_soil" ON soil_analysis FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "farmer_conversations" ON conversations FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "farmer_alerts" ON alerts FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "farmer_labor" ON labor_entries FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "farmer_flowering" ON flowering_records FOR ALL USING (user_id = auth.uid());
 
--- Politicas para caficultores (ven solo sus datos)
-CREATE POLICY "caficultor_fincas" ON fincas FOR ALL USING (usuario_id = auth.uid());
-CREATE POLICY "caficultor_lotes" ON lotes FOR ALL USING (finca_id IN (SELECT id FROM fincas WHERE usuario_id = auth.uid()));
-CREATE POLICY "caficultor_pedidos" ON pedidos FOR ALL USING (caficultor_id = auth.uid());
-CREATE POLICY "caficultor_gastos" ON gastos FOR ALL USING (usuario_id = auth.uid());
-CREATE POLICY "caficultor_suelo" ON analisis_suelo FOR ALL USING (usuario_id = auth.uid());
-CREATE POLICY "caficultor_conversaciones" ON conversaciones FOR ALL USING (usuario_id = auth.uid());
-CREATE POLICY "caficultor_alertas" ON alertas FOR ALL USING (usuario_id = auth.uid());
-CREATE POLICY "caficultor_jornales" ON jornales FOR ALL USING (usuario_id = auth.uid());
-CREATE POLICY "caficultor_floraciones" ON floraciones FOR ALL USING (usuario_id = auth.uid());
-
--- Politicas para almacenes (ven sus pedidos)
-CREATE POLICY "almacen_pedidos" ON pedidos FOR ALL USING (almacen_id IN (SELECT id FROM almacenes WHERE usuario_id = auth.uid()));
+CREATE POLICY "warehouse_orders" ON orders FOR ALL USING (warehouse_id IN (SELECT id FROM warehouses WHERE user_id = auth.uid()));

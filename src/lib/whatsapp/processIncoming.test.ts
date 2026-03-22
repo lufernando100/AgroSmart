@@ -9,8 +9,8 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-vi.mock('@/lib/usuarios/lookup', () => ({
-  buscarUsuarioPorTelefono: vi.fn(),
+vi.mock('@/lib/users/lookup', () => ({
+  findUserByPhoneDigits: vi.fn(),
 }))
 
 vi.mock('@/lib/whatsapp/send', () => ({
@@ -36,7 +36,7 @@ vi.mock('@/lib/whatsapp/claudeWhatsApp', () => ({
 import { processIncomingWebhook } from './processIncoming'
 import { intentarProcesarSiNoAlmacen } from './almacenRespuesta'
 import { enviarMensajeWhatsApp } from './send'
-import { buscarUsuarioPorTelefono } from '@/lib/usuarios/lookup'
+import { findUserByPhoneDigits } from '@/lib/users/lookup'
 
 function makeWebhookBody(from: string, text: string) {
   return {
@@ -89,7 +89,7 @@ describe('processIncomingWebhook', () => {
 
   it('envía mensaje de usuario no registrado', async () => {
     vi.mocked(intentarProcesarSiNoAlmacen).mockResolvedValueOnce(false)
-    vi.mocked(buscarUsuarioPorTelefono).mockResolvedValueOnce(null)
+    vi.mocked(findUserByPhoneDigits).mockResolvedValueOnce(null)
 
     await processIncomingWebhook(makeWebhookBody('573001234567', 'Hola'))
 
@@ -103,7 +103,7 @@ describe('processIncomingWebhook', () => {
     vi.mocked(intentarProcesarSiNoAlmacen).mockResolvedValueOnce(false)
 
     await processIncomingWebhook(makeWebhookBody('573001234567', ''))
-    expect(buscarUsuarioPorTelefono).not.toHaveBeenCalled()
+    expect(findUserByPhoneDigits).not.toHaveBeenCalled()
   })
 
   it('no lanza excepción con payload malformado', async () => {

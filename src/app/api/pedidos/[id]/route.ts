@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
-  actualizarPedidoAlmacen,
-  cancelarPedidoCaficultor,
-  obtenerPedidoParaUsuario,
+  updateOrderByWarehouse,
+  cancelOrderByFarmer,
+  getOrderForUser,
 } from '@/lib/pedidos/service'
 import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
 import { isUuid } from '@/lib/catalogo/uuid'
@@ -36,8 +36,8 @@ export async function GET(
       return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
     }
 
-    const rol = user.user_metadata?.rol as string | undefined
-    const data = await obtenerPedidoParaUsuario(id, user.id, rol)
+    const role = user.user_metadata?.role as string | undefined
+    const data = await getOrderForUser(id, user.id, role)
     if (!data) {
       return NextResponse.json({ error: 'No encontrado.' }, { status: 404 })
     }
@@ -80,13 +80,13 @@ export async function PATCH(
 
     const body = json as PatchBody
     const accion = body.accion
-    const rol = user.user_metadata?.rol as string | undefined
+    const role = user.user_metadata?.role as string | undefined
 
     if (accion === 'cancelar') {
-      if (rol === 'almacen') {
+      if (role === 'warehouse') {
         return NextResponse.json({ error: 'No permitido.' }, { status: 403 })
       }
-      await cancelarPedidoCaficultor({ pedidoId: id, caficultorId: user.id })
+      await cancelOrderByFarmer({ orderId: id, farmerId: user.id })
       return NextResponse.json({ ok: true })
     }
 
@@ -95,7 +95,7 @@ export async function PATCH(
       accion === 'rechazar' ||
       accion === 'entregar'
     ) {
-      if (rol !== 'almacen' && rol !== 'admin') {
+      if (role !== 'warehouse' && role !== 'admin') {
         return NextResponse.json({ error: 'No permitido.' }, { status: 403 })
       }
 
@@ -106,38 +106,38 @@ export async function PATCH(
       const notas =
         typeof body.notas_almacen === 'string' ? body.notas_almacen : undefined
 
-      const out = await actualizarPedidoAlmacen({
-        pedidoId: id,
-        almacenUsuarioId: user.id,
-        accion,
-        precioConfirmado: precio,
-        notasAlmacen: notas,
+      const out = await updateOrderByWarehouse({
+        orderId: id,
+        warehouseUserId: user.id,
+        action: accion,
+        confirmedPrice: precio,
+        warehouseNotes: notas,
       })
 
-      const { data: pedidoRow } = await supabase
-        .from('pedidos')
-        .select('numero, caficultor_id')
+      const { data: orderRow } = await supabase
+        .from('orders')
+        .select('order_number, farmer_id')
         .eq('id', id)
         .maybeSingle()
 
-      const { data: cafi } = await supabase
-        .from('usuarios')
-        .select('telefono')
-        .eq('id', pedidoRow?.caficultor_id as string)
+      const { data: farmer } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('id', orderRow?.farmer_id as string)
         .maybeSingle()
 
-      const telefono = cafi?.telefono as string | undefined
+      const phone = farmer?.phone as string | undefined
 
-      if (telefono && (accion === 'confirmar' || accion === 'rechazar')) {
-        const num = (pedidoRow as { numero?: string })?.numero ?? id
+      if (phone && (accion === 'confirmar' || accion === 'rechazar')) {
+        const num = (orderRow as { order_number?: string })?.order_number ?? id
         const msg =
           accion === 'confirmar'
             ? `Tu pedido ${num} fue confirmado por el almacén. GranoVivo.`
             : `Tu pedido ${num} no pudo ser atendido. Motivo: ${notas ?? '—'}. GranoVivo.`
         try {
-          await enviarMensajeWhatsApp(telefono, msg)
+          await enviarMensajeWhatsApp(phone, msg)
         } catch {
-          /* opcional */
+          /* optional */
         }
       }
 

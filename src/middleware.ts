@@ -12,8 +12,8 @@ function needsPageAuth(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-function defaultHomeForMetadata(rol: string | undefined): string {
-  if (rol === 'almacen' || rol === 'admin') return '/almacen/dashboard'
+function defaultHomeForMetadata(role: string | undefined): string {
+  if (role === 'warehouse' || role === 'admin') return '/almacen/dashboard'
   return '/catalogo'
 }
 
@@ -54,8 +54,8 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login') {
     if (user) {
       const nextParam = request.nextUrl.searchParams.get('next')
-      const rol = user.user_metadata?.rol as string | undefined
-      const fallback = defaultHomeForMetadata(rol)
+      const role = user.user_metadata?.role as string | undefined
+      const fallback = defaultHomeForMetadata(role)
       const target =
         nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
           ? nextParam
@@ -72,15 +72,15 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (pathname === '/almacen' || pathname.startsWith('/almacen/'))) {
-    const rol = user.user_metadata?.rol as string | undefined
-    if (rol !== 'almacen' && rol !== 'admin') {
+    const role = user.user_metadata?.role as string | undefined
+    if (role !== 'warehouse' && role !== 'admin') {
       return NextResponse.redirect(new URL('/catalogo', request.url))
     }
   }
 
   if (user && needsPageAuth(pathname) && !pathname.startsWith('/almacen')) {
-    const rol = user.user_metadata?.rol as string | undefined
-    if (rol === 'almacen') {
+    const role = user.user_metadata?.role as string | undefined
+    if (role === 'warehouse') {
       return NextResponse.redirect(new URL('/almacen/dashboard', request.url))
     }
   }

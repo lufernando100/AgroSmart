@@ -1,38 +1,31 @@
--- ============================================================
--- RLS en pedido_items (antes sin políticas = acceso ambiguo)
--- Ejecutar en Supabase después del modelo base.
--- ============================================================
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE pedido_items ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "caficultor_pedido_items_select" ON pedido_items
+CREATE POLICY "farmer_order_items_select" ON order_items
   FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM pedidos p
-      WHERE p.id = pedido_items.pedido_id AND p.caficultor_id = auth.uid()
+      SELECT 1 FROM orders o
+      WHERE o.id = order_items.order_id AND o.farmer_id = auth.uid()
     )
   );
 
-CREATE POLICY "caficultor_pedido_items_insert" ON pedido_items
+CREATE POLICY "farmer_order_items_insert" ON order_items
   FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM pedidos p
-      WHERE p.id = pedido_items.pedido_id AND p.caficultor_id = auth.uid()
+      SELECT 1 FROM orders o
+      WHERE o.id = order_items.order_id AND o.farmer_id = auth.uid()
     )
   );
 
-CREATE POLICY "almacen_pedido_items_select" ON pedido_items
+CREATE POLICY "warehouse_order_items_select" ON order_items
   FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM pedidos p
-      WHERE p.id = pedido_items.pedido_id
-        AND p.almacen_id IN (
-          SELECT id FROM almacenes WHERE usuario_id = auth.uid()
+      SELECT 1 FROM orders o
+      WHERE o.id = order_items.order_id
+        AND o.warehouse_id IN (
+          SELECT id FROM warehouses WHERE user_id = auth.uid()
         )
     )
   );
-
--- El almacén no inserta líneas normalmente; actualizaciones vía pedido

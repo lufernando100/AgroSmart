@@ -2,30 +2,28 @@ import { describe, it, expect } from 'vitest'
 import { friendlyDbError, isFkViolation } from './db-errors'
 
 describe('friendlyDbError', () => {
-  // ─── FK violations (23503) ──────────────────────────────────────────────────
-
-  it('FK en caficultor_id → mensaje de perfil', () => {
+  it('FK en farmer_id → mensaje de perfil', () => {
     const msg = friendlyDbError({
       code: '23503',
-      message: 'insert or update on table "pedidos" violates foreign key constraint "pedidos_caficultor_id_fkey"',
+      message: 'insert or update on table "orders" violates foreign key constraint "orders_farmer_id_fkey"',
     })
     expect(msg).toContain('perfil')
     expect(msg).toContain('sesión')
   })
 
-  it('FK en almacen_id → mensaje de almacén', () => {
+  it('FK en warehouse_id → mensaje de almacén', () => {
     const msg = friendlyDbError({
       code: '23503',
-      message: 'violates foreign key constraint "pedidos_almacen_id_fkey"',
+      message: 'violates foreign key constraint "orders_warehouse_id_fkey"',
     })
     expect(msg).toContain('almacén')
     expect(msg).toContain('disponible')
   })
 
-  it('FK en producto_id → mensaje de catálogo', () => {
+  it('FK en product_id → mensaje de catálogo', () => {
     const msg = friendlyDbError({
       code: '23503',
-      message: 'violates foreign key constraint "pedido_items_producto_id_fkey"',
+      message: 'violates foreign key constraint "order_items_product_id_fkey"',
     })
     expect(msg).toContain('catálogo')
   })
@@ -41,12 +39,10 @@ describe('friendlyDbError', () => {
   it('FK por message sin code → funciona igual', () => {
     const msg = friendlyDbError({
       code: '',
-      message: 'foreign key constraint "pedidos_caficultor_id_fkey"',
+      message: 'foreign key constraint "orders_farmer_id_fkey"',
     })
     expect(msg).toContain('perfil')
   })
-
-  // ─── Duplicado (23505) ──────────────────────────────────────────────────────
 
   it('duplicado por code 23505 → mensaje de registro existente', () => {
     const msg = friendlyDbError({ code: '23505', message: 'duplicate key value' })
@@ -58,10 +54,8 @@ describe('friendlyDbError', () => {
     expect(msg).toContain('ya existe')
   })
 
-  // ─── Campo nulo (23502) ─────────────────────────────────────────────────────
-
   it('not null violation → mensaje de campo obligatorio', () => {
-    const msg = friendlyDbError({ code: '23502', message: 'null value in column "numero"' })
+    const msg = friendlyDbError({ code: '23502', message: 'null value in column "order_number"' })
     expect(msg).toContain('obligatorio')
   })
 
@@ -70,10 +64,8 @@ describe('friendlyDbError', () => {
     expect(msg).toContain('obligatorio')
   })
 
-  // ─── Permisos (42501 / RLS) ─────────────────────────────────────────────────
-
   it('42501 → mensaje de permisos', () => {
-    const msg = friendlyDbError({ code: '42501', message: 'permission denied for table pedidos' })
+    const msg = friendlyDbError({ code: '42501', message: 'permission denied for table orders' })
     expect(msg).toContain('permiso')
   })
 
@@ -87,14 +79,10 @@ describe('friendlyDbError', () => {
     expect(msg).toContain('permiso')
   })
 
-  // ─── Timeout ────────────────────────────────────────────────────────────────
-
   it('timeout → mensaje de conexión', () => {
     const msg = friendlyDbError({ code: '', message: 'query timeout exceeded' })
     expect(msg).toContain('tardó demasiado')
   })
-
-  // ─── Genérico ───────────────────────────────────────────────────────────────
 
   it('error desconocido → mensaje genérico', () => {
     const msg = friendlyDbError({ code: '99999', message: 'some unknown db error' })
@@ -119,8 +107,8 @@ describe('isFkViolation', () => {
   it('detecta FK violation con columna específica', () => {
     expect(
       isFkViolation(
-        { code: '23503', message: 'pedidos_caficultor_id_fkey' },
-        'caficultor_id'
+        { code: '23503', message: 'orders_farmer_id_fkey' },
+        'farmer_id'
       )
     ).toBe(true)
   })
@@ -128,8 +116,8 @@ describe('isFkViolation', () => {
   it('no detecta FK si la columna no coincide', () => {
     expect(
       isFkViolation(
-        { code: '23503', message: 'pedidos_almacen_id_fkey' },
-        'caficultor_id'
+        { code: '23503', message: 'orders_warehouse_id_fkey' },
+        'farmer_id'
       )
     ).toBe(false)
   })

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { normalizePhoneCo } from '@/lib/auth/phone'
-import { syncUsuarioAfterAuth } from '@/lib/auth/sync-usuario'
-import type { UsuarioRol } from '@/types/database'
+import { syncUserAfterAuth } from '@/lib/auth/sync-user'
+import type { UserRole } from '@/types/database'
 
 /** Mensaje claro cuando Supabase rechaza el OTP (expiró, ya usado o no coincide). */
 function friendlyOtpError(message: string): string {
@@ -59,8 +59,8 @@ function assertEnv(): { url: string; anonKey: string } | NextResponse {
   return { url, anonKey }
 }
 
-function redirectPathForRol(rol: UsuarioRol): string {
-  if (rol === 'almacen' || rol === 'admin') return '/almacen/dashboard'
+function redirectPathForRole(role: UserRole): string {
+  if (role === 'warehouse' || role === 'admin') return '/almacen/dashboard'
   return '/catalogo'
 }
 
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { rol } = await syncUsuarioAfterAuth({
+    const { role } = await syncUserAfterAuth({
       userId: user.id,
       phoneE164,
     })
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
     // con sus opciones originales (httpOnly, maxAge, sameSite, path, secure).
     const final = NextResponse.json({
       ok: true,
-      redirect: redirectPathForRol(rol),
+      redirect: redirectPathForRole(role),
     })
     for (const { name, value, options } of pendingCookies) {
       final.cookies.set(name, value, options)

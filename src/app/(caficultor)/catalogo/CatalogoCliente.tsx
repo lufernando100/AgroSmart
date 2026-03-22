@@ -7,17 +7,18 @@ import { Search, ChevronRight } from 'lucide-react'
 import { formatCOP, formatKm } from '@/lib/utils/format'
 import { MensajeVacio } from '@/components/ui/MensajeVacio'
 import { QuickAdd } from '@/components/catalogo/QuickAdd'
-import type { ProductoListado } from '@/lib/catalogo/queries'
+import type { ProductSummary } from '@/lib/catalogo/queries'
 
 type Props = {
-  categorias: { id: string; nombre: string; orden: number }[]
-  productos: ProductoListado[]
+  categorias: { id: string; name: string; sort_order: number }[]
+  productos: ProductSummary[]
   categoriaIdActiva: string | null
-  /** El almacén con precio más bajo (para QuickAdd directo desde la lista) */
-  preciosPorProducto?: Record<string, { almacenId: string; almacenNombre: string; precio: number }>
+  preciosPorProducto?: Record<
+    string,
+    { warehouse_id: string; warehouse_name: string; price: number }
+  >
 }
 
-/** Colores de placeholder cíclicos por índice */
 const PLACEHOLDER_COLORS = [
   { bg: '#D4E8D4', text: '#1A481A' },
   { bg: '#F0E6D6', text: '#6F5410' },
@@ -26,23 +27,23 @@ const PLACEHOLDER_COLORS = [
 ]
 
 function FotoProducto({
-  foto_url,
-  nombre,
+  photo_url,
+  name,
   index,
 }: {
-  foto_url: string | null
-  nombre: string
+  photo_url: string | null
+  name: string
   index: number
 }) {
   const color = PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length]
-  const inicial = nombre.charAt(0).toUpperCase()
+  const inicial = name.charAt(0).toUpperCase()
 
-  if (foto_url) {
+  if (photo_url) {
     return (
       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl">
         <Image
-          src={foto_url}
-          alt={nombre}
+          src={photo_url}
+          alt={name}
           fill
           sizes="56px"
           className="object-cover"
@@ -74,15 +75,15 @@ export function CatalogoCliente({
   const productosFiltrados = useMemo(() => {
     let lista = productos
     if (catActiva) {
-      lista = lista.filter((p) => p.categoria_id === catActiva)
+      lista = lista.filter((p) => p.category_id === catActiva)
     }
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase()
       lista = lista.filter(
         (p) =>
-          p.nombre.toLowerCase().includes(q) ||
-          (p.nombre_corto ?? '').toLowerCase().includes(q) ||
-          (p.presentacion ?? '').toLowerCase().includes(q)
+          p.name.toLowerCase().includes(q) ||
+          (p.short_name ?? '').toLowerCase().includes(q) ||
+          (p.presentation ?? '').toLowerCase().includes(q)
       )
     }
     return lista
@@ -90,7 +91,6 @@ export function CatalogoCliente({
 
   return (
     <>
-      {/* ── Buscador ──────────────────────────────────────────────────────── */}
       <div className="relative mb-4">
         <Search
           size={18}
@@ -108,7 +108,6 @@ export function CatalogoCliente({
         />
       </div>
 
-      {/* ── Chips de categorías ───────────────────────────────────────────── */}
       <div className="mb-5 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
         <button
           type="button"
@@ -134,12 +133,11 @@ export function CatalogoCliente({
                 : 'bg-white text-[#524E46] border border-[#E8E4DD] hover:border-[#2D7A2D]/40'
             }`}
           >
-            {c.nombre}
+            {c.name}
           </button>
         ))}
       </div>
 
-      {/* ── Resultados ────────────────────────────────────────────────────── */}
       {productosFiltrados.length === 0 ? (
         <MensajeVacio
           Icono={Search}
@@ -157,39 +155,34 @@ export function CatalogoCliente({
             const mejorPrecio = preciosPorProducto[p.id]
             return (
               <li key={p.id}>
-                {/*
-                 * La tarjeta es relativa (relative) para que el drawer de QuickAdd
-                 * se posicione absolutamente dentro de ella si se necesita en el futuro.
-                 * Por ahora QuickAdd está al costado derecho de la tarjeta.
-                 */}
                 <div className="group relative overflow-hidden rounded-2xl border border-[#E8E4DD] bg-white shadow-[0_1px_3px_rgba(18,17,16,0.06)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(18,17,16,0.10)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_1px_3px_rgba(18,17,16,0.06)]">
                   <Link
                     href={`/catalogo/${p.id}`}
                     className="flex items-center gap-3 p-4 pr-3"
                   >
-                    <FotoProducto foto_url={p.foto_url} nombre={p.nombre} index={i} />
+                    <FotoProducto photo_url={p.photo_url} name={p.name} index={i} />
 
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold text-[#252320] leading-snug">
-                        {p.nombre}
+                        {p.name}
                       </p>
                       <p className="truncate text-sm text-[#736E64]">
-                        {[p.presentacion, p.unidad_medida].filter(Boolean).join(' · ')}
+                        {[p.presentation, p.unit_of_measure].filter(Boolean).join(' · ')}
                       </p>
-                      {p.categoria_nombre ? (
-                        <p className="mt-0.5 text-xs text-[#A39E94]">{p.categoria_nombre}</p>
+                      {p.category_name ? (
+                        <p className="mt-0.5 text-xs text-[#A39E94]">{p.category_name}</p>
                       ) : null}
                       <div className="mt-1.5 flex items-baseline gap-1.5">
                         <span className="tabular-nums text-base font-bold text-[#2D7A2D]">
-                          Desde {formatCOP(p.precio_desde)}
+                          Desde {formatCOP(p.price_from)}
                         </span>
                         <span className="text-xs text-[#736E64]">
-                          · {p.almacenes_count} almacén{p.almacenes_count !== 1 ? 'es' : ''}
+                          · {p.warehouse_count} almacén{p.warehouse_count !== 1 ? 'es' : ''}
                         </span>
                       </div>
-                      {p.distancia_km_min != null ? (
+                      {p.min_distance_km != null ? (
                         <p className="text-xs text-[#A39E94]">
-                          a {formatKm(p.distancia_km_min)}
+                          a {formatKm(p.min_distance_km)}
                         </p>
                       ) : null}
                     </div>
@@ -201,15 +194,14 @@ export function CatalogoCliente({
                     />
                   </Link>
 
-                  {/* Quick Add — solo si hay precio directo disponible */}
                   {mejorPrecio ? (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <QuickAdd
-                        productoId={p.id}
-                        almacenId={mejorPrecio.almacenId}
-                        almacenNombre={mejorPrecio.almacenNombre}
-                        precioUnitario={mejorPrecio.precio}
-                        productoNombre={p.nombre}
+                        productId={p.id}
+                        warehouseId={mejorPrecio.warehouse_id}
+                        warehouseName={mejorPrecio.warehouse_name}
+                        unitPrice={mejorPrecio.price}
+                        productName={p.name}
                       />
                     </div>
                   ) : null}

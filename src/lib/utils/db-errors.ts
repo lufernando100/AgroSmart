@@ -13,13 +13,13 @@ export function friendlyDbError(err: {
 
   // FK violation — 23503
   if (code === '23503' || (code === '' && msg.includes('foreign key'))) {
-    if (msg.includes('caficultor_id')) {
+    if (msg.includes('farmer_id') || msg.includes('caficultor_id')) {
       return 'Tu perfil no está listo. Cierra sesión, vuelve a entrar e intenta de nuevo.'
     }
-    if (msg.includes('almacen_id')) {
+    if (msg.includes('warehouse_id') || msg.includes('almacen_id')) {
       return 'El almacén seleccionado ya no está disponible.'
     }
-    if (msg.includes('producto_id')) {
+    if (msg.includes('product_id') || msg.includes('producto_id')) {
       return 'Uno de los productos ya no está en el catálogo.'
     }
     return 'Referencia inválida. Recarga la página e intenta de nuevo.'

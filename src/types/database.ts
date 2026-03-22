@@ -1,215 +1,236 @@
-// Tipos generados manualmente — reemplazar con: supabase gen types typescript
-// cuando el proyecto esté conectado a Supabase
+// Manual types — replace with: supabase gen types typescript
 
-export type SectorTipo = 'cafe' | 'ganaderia' | 'cacao' | 'otro'
-export type UsuarioRol = 'caficultor' | 'almacen' | 'admin' | 'cooperativa'
-export type PedidoEstado = 'pendiente' | 'confirmado' | 'rechazado' | 'entregado' | 'cancelado'
-export type PrecioOrigen = 'manual' | 'foto_whatsapp' | 'integracion_api' | 'referencia_sipsa'
-export type GastoCategoria = 'fertilizante' | 'agroquimico' | 'herramienta' | 'mano_de_obra' | 'transporte' | 'semilla' | 'otro'
-export type CultivoEtapa = 'almacigo' | 'levante' | 'produccion' | 'zoca'
-export type LoteEstado = 'recien_sembrado' | 'en_produccion' | 'para_renovar' | 'renovado'
-export type AlertaTipo = 'clima' | 'plaga' | 'precio' | 'fertilizacion' | 'cosecha' | 'general'
-export type ConversacionCanal = 'whatsapp' | 'pwa'
+export type SectorType = 'coffee' | 'livestock' | 'cocoa' | 'other'
+export type UserRole = 'farmer' | 'warehouse' | 'admin' | 'cooperative'
+export type OrderStatus = 'pending' | 'confirmed' | 'rejected' | 'delivered' | 'cancelled'
+export type PriceOrigin =
+  | 'manual'
+  | 'whatsapp_photo'
+  | 'api_integration'
+  | 'sipsa_reference'
+export type ExpenseCategory =
+  | 'fertilizer'
+  | 'agrochemical'
+  | 'tool'
+  | 'labor'
+  | 'transport'
+  | 'seed'
+  | 'other'
+export type CropStage = 'nursery' | 'establishment' | 'production' | 'stump'
+export type PlotStatus =
+  | 'newly_planted'
+  | 'in_production'
+  | 'due_for_renewal'
+  | 'renewed'
+export type AlertType =
+  | 'weather'
+  | 'pest'
+  | 'price'
+  | 'fertilization'
+  | 'harvest'
+  | 'general'
+export type Channel = 'whatsapp' | 'pwa'
+export type NutrientLevel = 'low' | 'medium' | 'high'
 
-export interface Usuario {
+export interface User {
   id: string
-  telefono: string
-  nombre: string
-  cedula?: string
-  cedula_cafetera?: string
-  rol: UsuarioRol
-  sector: SectorTipo
+  phone: string
+  name: string
+  national_id?: string
+  coffee_registry_id?: string
+  role: UserRole
+  sector: SectorType
   avatar_url?: string
-  activo: boolean
+  active: boolean
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
 }
 
-export interface Finca {
+export interface Farm {
   id: string
-  usuario_id: string
-  nombre: string
+  user_id: string
+  name: string
   vereda?: string
-  municipio: string
-  departamento: string
-  altitud_msnm?: number
-  ubicacion?: unknown // PostGIS GEOGRAPHY
-  area_total_ha?: number
+  municipality: string
+  department: string
+  altitude_masl?: number
+  location?: unknown
+  total_area_ha?: number
   created_at: string
   updated_at: string
 }
 
-export interface Lote {
+export interface Plot {
   id: string
-  finca_id: string
-  nombre: string
-  variedad?: string
-  edad_anios?: number
-  densidad_plantas_ha?: number
-  porcentaje_sombrio?: number
+  farm_id: string
+  name: string
+  variety?: string
+  age_years?: number
+  plant_density_per_ha?: number
+  shade_percentage?: number
   area_ha?: number
-  estado: LoteEstado
-  poligono?: unknown // PostGIS GEOGRAPHY
-  etapa: CultivoEtapa
-  ultima_floracion?: string
-  fecha_estimada_cosecha?: string
-  fecha_fertilizacion?: string
+  status: PlotStatus
+  polygon?: unknown
+  crop_stage: CropStage
+  last_flowering_date?: string
+  estimated_harvest_date?: string
+  fertilization_date?: string
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
 }
 
-export interface Categoria {
+export interface Category {
   id: string
-  nombre: string
-  sector: SectorTipo
-  icono?: string
-  orden: number
-  activo: boolean
+  name: string
+  sector: SectorType
+  icon?: string
+  sort_order: number
+  active: boolean
 }
 
-export interface Almacen {
+export interface Warehouse {
   id: string
-  usuario_id?: string
-  nombre: string
-  nit?: string
-  telefono_whatsapp?: string
+  user_id?: string
+  name: string
+  tax_id?: string
+  whatsapp_phone?: string
   email?: string
-  municipio: string
-  departamento: string
-  direccion?: string
-  ubicacion?: unknown // PostGIS GEOGRAPHY
-  horario?: string
-  acepta_pedidos_digitales: boolean
-  comision_porcentaje: number
-  activo: boolean
+  municipality: string
+  department: string
+  address?: string
+  location?: unknown
+  hours_text?: string
+  accepts_digital_orders: boolean
+  commission_percentage: number
+  active: boolean
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
 }
 
-export interface Producto {
+export interface Product {
   id: string
-  categoria_id?: string
-  nombre: string
-  nombre_corto?: string
-  marca?: string
-  presentacion?: string
-  unidad_medida: string
-  peso_kg?: number
-  composicion?: Record<string, number>
-  descripcion?: string
-  imagen_url?: string
-  sector: SectorTipo
-  activo: boolean
+  category_id?: string
+  name: string
+  short_name?: string
+  brand?: string
+  presentation?: string
+  unit_of_measure: string
+  weight_kg?: number
+  composition?: Record<string, number>
+  description?: string
+  image_url?: string
+  sector: SectorType
+  active: boolean
   metadata: Record<string, unknown>
   created_at: string
 }
 
-export interface Precio {
+export interface Price {
   id: string
-  producto_id: string
-  almacen_id: string
-  precio_unitario: number
-  precio_por_kg_nutriente?: number
-  disponible: boolean
-  stock_cantidad?: number
-  origen: PrecioOrigen
-  vigente_hasta?: string
-  actualizado_at: string
+  product_id: string
+  warehouse_id: string
+  unit_price: number
+  price_per_nutrient_kg?: number
+  is_available: boolean
+  stock_quantity?: number
+  origin: PriceOrigin
+  valid_until?: string
+  updated_at: string
   created_at: string
 }
 
-export interface Pedido {
+export interface Order {
   id: string
-  numero: string
-  caficultor_id: string
-  almacen_id: string
-  estado: PedidoEstado
-  canal: ConversacionCanal
+  order_number: string
+  farmer_id: string
+  warehouse_id: string
+  status: OrderStatus
+  channel: Channel
   subtotal: number
-  comision: number
+  commission: number
   total: number
-  precio_confirmado_almacen?: number
-  notas?: string
-  notas_almacen?: string
-  confirmado_at?: string
-  entregado_at?: string
+  warehouse_confirmed_price?: number
+  notes?: string
+  warehouse_notes?: string
+  confirmed_at?: string
+  delivered_at?: string
   created_at: string
   updated_at: string
 }
 
-export interface PedidoItem {
+export interface OrderItem {
   id: string
-  pedido_id: string
-  producto_id: string
-  cantidad: number
-  precio_unitario: number
+  order_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
   subtotal: number
   created_at: string
 }
 
-export interface AnalisisSuelo {
+export interface SoilAnalysis {
   id: string
-  lote_id?: string
-  finca_id: string
-  usuario_id: string
-  laboratorio?: string
-  fecha_analisis?: string
-  fecha_registro: string
-  imagen_url?: string
-  canal?: ConversacionCanal
+  plot_id?: string
+  farm_id: string
+  user_id: string
+  lab_name?: string
+  analysis_date?: string
+  registered_at: string
+  image_url?: string
+  input_channel?: Channel
   ph?: number
-  materia_organica?: number
-  nitrogeno?: number
-  fosforo?: number
-  potasio?: number
-  calcio?: number
-  magnesio?: number
-  aluminio?: number
-  sodio?: number
-  azufre?: number
-  hierro?: number
-  cobre?: number
-  manganeso?: number
+  organic_matter?: number
+  nitrogen?: number
+  phosphorus?: number
+  potassium?: number
+  calcium?: number
+  magnesium?: number
+  aluminum?: number
+  sodium?: number
+  sulfur?: number
+  iron?: number
+  copper?: number
+  manganese?: number
   zinc?: number
-  boro?: number
-  cice?: number
-  conductividad_electrica?: number
-  interpretacion?: Record<string, string>
-  recomendacion?: Record<string, unknown>
-  recomendacion_texto?: string
+  boron?: number
+  cec?: number
+  electrical_conductivity?: number
+  interpretation?: Record<string, string>
+  recommendation?: Record<string, unknown>
+  recommendation_text?: string
   created_at: string
 }
 
-export interface Gasto {
+export interface Expense {
   id: string
-  usuario_id: string
-  finca_id?: string
-  lote_id?: string
-  pedido_id?: string
-  categoria: GastoCategoria
-  descripcion?: string
-  monto: number
-  fecha: string
-  proveedor?: string
-  factura_imagen_url?: string
-  factura_datos?: Record<string, unknown>
-  origen: string
+  user_id: string
+  farm_id?: string
+  plot_id?: string
+  order_id?: string
+  category: ExpenseCategory
+  description?: string
+  amount: number
+  expense_date: string
+  supplier?: string
+  invoice_image_url?: string
+  invoice_data?: Record<string, unknown>
+  source: string
   created_at: string
 }
 
-export interface Floracion {
+export interface FloweringRecord {
   id: string
-  lote_id: string
-  usuario_id: string
-  fecha_floracion: string
-  intensidad?: 'alta' | 'media' | 'baja'
-  imagen_url?: string
-  fecha_estimada_cosecha?: string
-  fecha_fertilizacion?: string
-  periodo_critico_broca_inicio?: string
-  notas?: string
+  plot_id: string
+  user_id: string
+  flowering_date: string
+  intensity?: 'alta' | 'media' | 'baja'
+  image_url?: string
+  estimated_harvest_date?: string
+  fertilization_date?: string
+  borer_critical_period_start?: string
+  notes?: string
   created_at: string
 }

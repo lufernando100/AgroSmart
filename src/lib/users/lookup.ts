@@ -1,11 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
-/** Busca usuario por teléfono almacenado (dígitos, con o sin 57). */
-export async function buscarUsuarioPorTelefono(
-  telefonoDigits: string
-): Promise<{ id: string; nombre: string; telefono: string } | null> {
+/** Looks up a user by phone digits as stored in DB (with or without 57). */
+export async function findUserByPhoneDigits(
+  phoneDigits: string
+): Promise<{ id: string; name: string; phone: string } | null> {
   const admin = createAdminClient()
-  const d = telefonoDigits.replace(/\D/g, '')
+  const d = phoneDigits.replace(/\D/g, '')
   const variants = [d]
   if (d.length === 10 && d.startsWith('3')) {
     variants.push(`57${d}`)
@@ -15,9 +15,9 @@ export async function buscarUsuarioPorTelefono(
   }
 
   const { data, error } = await admin
-    .from('usuarios')
-    .select('id, nombre, telefono')
-    .in('telefono', variants)
+    .from('users')
+    .select('id, name, phone')
+    .in('phone', variants)
     .limit(1)
     .maybeSingle()
 
@@ -25,7 +25,7 @@ export async function buscarUsuarioPorTelefono(
   if (!data) return null
   return {
     id: data.id as string,
-    nombre: data.nombre as string,
-    telefono: data.telefono as string,
+    name: data.name as string,
+    phone: data.phone as string,
   }
 }

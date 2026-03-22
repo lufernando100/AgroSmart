@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT, ASSISTANT_TOOLS } from '@/lib/ai/system_prompt_tools'
 import { ejecutarTool } from '@/lib/ai/execute-tools'
-import type { ConversacionCanal } from '@/types/database'
+import type { Channel } from '@/types/database'
 
 const TOOL_ALLOW = new Set([
   'buscar_productos',
@@ -18,7 +18,7 @@ function anthropicTools(): Anthropic.Tool[] {
 }
 
 export async function runClaudeParaWhatsApp(params: {
-  caficultorId: string
+  farmerId: string
   textoUsuario: string
 }): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY
@@ -30,7 +30,7 @@ export async function runClaudeParaWhatsApp(params: {
   const model =
     process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-20250514'
 
-  const system = `${SYSTEM_PROMPT}\n\n## Contexto de esta conversación\n- caficultor_id (UUID): ${params.caficultorId}\n- Usa siempre este caficultor_id en crear_pedido y buscar_productos.`
+  const system = `${SYSTEM_PROMPT}\n\n## Contexto de esta conversación\n- caficultor_id (UUID): ${params.farmerId}\n- Usa siempre este caficultor_id en crear_pedido y buscar_productos.`
 
   const tools = anthropicTools()
   const messages: Anthropic.MessageParam[] = [
@@ -73,8 +73,8 @@ export async function runClaudeParaWhatsApp(params: {
         name: tu.name,
         input,
         contexto: {
-          caficultorId: params.caficultorId,
-          canal: 'whatsapp' as ConversacionCanal,
+          farmerId: params.farmerId,
+          channel: 'whatsapp' as Channel,
         },
       })
       toolResults.push({

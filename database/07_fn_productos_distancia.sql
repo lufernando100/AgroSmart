@@ -1,26 +1,22 @@
--- ============================================================
--- Búsqueda de productos con precio mínimo, nº almacenes y
--- distancia (km) al punto del caficultor. Usada por GET /api/productos/buscar.
--- Ejecutar en Supabase SQL Editor después del modelo y semilla.
--- ============================================================
+-- Product search with min price, warehouse count, distance (km). Used by GET /api/productos/buscar
 
-CREATE OR REPLACE FUNCTION public.productos_con_distancia(
+CREATE OR REPLACE FUNCTION public.products_with_distance(
   p_lat double precision,
   p_lng double precision,
-  p_busqueda text DEFAULT NULL,
-  p_categoria_id uuid DEFAULT NULL,
-  p_sector sector_tipo DEFAULT 'cafe'
+  p_search text DEFAULT NULL,
+  p_category_id uuid DEFAULT NULL,
+  p_sector sector_type DEFAULT 'coffee'
 )
 RETURNS TABLE (
-  producto_id uuid,
-  nombre varchar,
-  nombre_corto varchar,
-  presentacion varchar,
-  unidad_medida varchar,
-  categoria_id uuid,
-  precio_min numeric,
-  almacenes_con_precio bigint,
-  distancia_km_min double precision
+  product_id uuid,
+  name varchar,
+  short_name varchar,
+  presentation varchar,
+  unit_of_measure varchar,
+  category_id uuid,
+  min_price numeric,
+  warehouses_with_price bigint,
+  min_distance_km double precision
 )
 LANGUAGE sql
 STABLE
@@ -28,44 +24,44 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
   SELECT
-    p.id AS producto_id,
-    p.nombre,
-    p.nombre_corto,
-    p.presentacion,
-    p.unidad_medida,
-    p.categoria_id,
-    MIN(pr.precio_unitario)::numeric AS precio_min,
-    COUNT(DISTINCT pr.almacen_id)::bigint AS almacenes_con_precio,
+    p.id AS product_id,
+    p.name,
+    p.short_name,
+    p.presentation,
+    p.unit_of_measure,
+    p.category_id,
+    MIN(pr.unit_price)::numeric AS min_price,
+    COUNT(DISTINCT pr.warehouse_id)::bigint AS warehouses_with_price,
     (MIN(
       ST_Distance(
-        a.ubicacion,
+        w.location,
         ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography
       )
-    ) / 1000.0)::double precision AS distancia_km_min
-  FROM productos p
-  INNER JOIN precios pr ON pr.producto_id = p.id AND pr.disponible = true
-  INNER JOIN almacenes a ON a.id = pr.almacen_id
-    AND a.activo = true
-    AND COALESCE(a.acepta_pedidos_digitales, true) = true
-    AND a.ubicacion IS NOT NULL
-  WHERE p.activo = true
+    ) / 1000.0)::double precision AS min_distance_km
+  FROM products p
+  INNER JOIN prices pr ON pr.product_id = p.id AND pr.is_available = true
+  INNER JOIN warehouses w ON w.id = pr.warehouse_id
+    AND w.active = true
+    AND COALESCE(w.accepts_digital_orders, true) = true
+    AND w.location IS NOT NULL
+  WHERE p.active = true
     AND p.sector = p_sector
     AND (
-      p_busqueda IS NULL
-      OR trim(p_busqueda) = ''
-      OR p.nombre ILIKE '%' || p_busqueda || '%'
-      OR (p.nombre_corto IS NOT NULL AND p.nombre_corto ILIKE '%' || p_busqueda || '%')
+      p_search IS NULL
+      OR trim(p_search) = ''
+      OR p.name ILIKE '%' || p_search || '%'
+      OR (p.short_name IS NOT NULL AND p.short_name ILIKE '%' || p_search || '%')
     )
-    AND (p_categoria_id IS NULL OR p.categoria_id = p_categoria_id)
-  GROUP BY p.id, p.nombre, p.nombre_corto, p.presentacion, p.unidad_medida, p.categoria_id
-  ORDER BY distancia_km_min ASC NULLS LAST, precio_min ASC
+    AND (p_category_id IS NULL OR p.category_id = p_category_id)
+  GROUP BY p.id, p.name, p.short_name, p.presentation, p.unit_of_measure, p.category_id
+  ORDER BY min_distance_km ASC NULLS LAST, min_price ASC
   LIMIT 100;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.productos_con_distancia(
+GRANT EXECUTE ON FUNCTION public.products_with_distance(
   double precision,
   double precision,
   text,
   uuid,
-  sector_tipo
+  sector_type
 ) TO anon, authenticated, service_role;

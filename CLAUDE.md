@@ -41,6 +41,7 @@ Ver el plan completo de 4 fases en `AGENTS.md` y `PLAN.md`.
 ## REGLAS RÁPIDAS
 
 **Hacer:**
+- **Idioma:** código, esquema de BD y nombres de API en **inglés**; textos de UI, WhatsApp de producto y errores al usuario en **español** (Colombia).
 - TypeScript estricto siempre — cero `any`
 - Usar `createClient()` de `lib/supabase/server.ts` en API routes y Server Components
 - Usar `createAdminClient()` de `lib/supabase/admin.ts` solo para operaciones privilegiadas

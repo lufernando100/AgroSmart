@@ -322,6 +322,11 @@ El objetivo es tener un flujo completo de pedido funcionando antes de cualquier 
 
 ## REGLAS DE DESARROLLO
 
+### Idioma: código en inglés, producto en español
+- **Código y datos:** nombres en inglés — tablas, columnas, enums SQL; variables, funciones, tipos TypeScript; claves JSON de API y `user_metadata` (p. ej. `role`, `warehouse_id`). Commits en español siguen siendo válidos.
+- **Interfaz y mensajes al usuario:** español colombiano (PWA, WhatsApp del negocio, textos de error amigables, `aria-label` orientados al usuario). Los mensajes técnicos de logs pueden estar en inglés.
+- **Asistente IA:** el system prompt y las tools pueden mezclar español donde haga falta para el tono cafetero; los identificadores en código que implementan las tools siguen la convención en inglés.
+
 ### TypeScript
 - Estricto siempre: cero `any`, cero `as unknown`
 - Usar los tipos de `src/types/database.ts` en todo el proyecto

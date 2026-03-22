@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { crearPedido } from '@/lib/pedidos/service'
+import { createOrder } from '@/lib/pedidos/service'
 import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
 import { isUuid } from '@/lib/catalogo/uuid'
 import { friendlyDbError } from '@/lib/utils/db-errors'
-import type { ConversacionCanal } from '@/types/database'
+import type { Channel } from '@/types/database'
 
-/** Longitud máxima para el campo notas (WhatsApp soporta hasta 4096, pero 500 es suficiente). */
-const NOTAS_MAX_LEN = 500
-/** Cantidad mínima y máxima por ítem de pedido. */
-const CANTIDAD_MIN = 1
-const CANTIDAD_MAX = 9_999
+const NOTES_MAX_LEN = 500
+const QTY_MIN = 1
+const QTY_MAX = 9_999
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -26,8 +24,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
     }
 
-    const rol = user.user_metadata?.rol as string | undefined
-    if (rol === 'almacen') {
+    const role = user.user_metadata?.role as string | undefined
+    if (role === 'warehouse') {
       return NextResponse.json(
         { error: 'Los almacenes no crean pedidos desde esta ruta.' },
         { status: 403 }
@@ -45,12 +43,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 })
     }
 
-    const almacenId = json.almacen_id
+    const warehouseId = json.warehouse_id
     const items = json.items
-    const canalRaw = json.canal
+    const channelRaw = json.channel
 
-    if (typeof almacenId !== 'string' || !isUuid(almacenId)) {
-      return NextResponse.json({ error: 'almacen_id inválido.' }, { status: 400 })
+    if (typeof warehouseId !== 'string' || !isUuid(warehouseId)) {
+      return NextResponse.json({ error: 'warehouse_id inválido.' }, { status: 400 })
     }
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -60,41 +58,41 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validar y sanitizar notas (máx 500 caracteres)
-    let notas: string | undefined
-    if (typeof json.notas === 'string') {
-      const notasTrimmed = json.notas.trim()
-      if (notasTrimmed.length > NOTAS_MAX_LEN) {
+    let notes: string | undefined
+    if (typeof json.notes === 'string') {
+      const trimmed = json.notes.trim()
+      if (trimmed.length > NOTES_MAX_LEN) {
         return NextResponse.json(
-          { error: `Las notas no pueden superar ${NOTAS_MAX_LEN} caracteres.` },
+          { error: `Las notas no pueden superar ${NOTES_MAX_LEN} caracteres.` },
           { status: 400 }
         )
       }
-      notas = notasTrimmed || undefined
+      notes = trimmed || undefined
     }
 
-    // Validar ítems: UUID válido, cantidad entero entre 1 y 9999
-    const parsedItems: { producto_id: string; cantidad: number }[] = []
+    const parsedItems: { product_id: string; quantity: number }[] = []
     for (const it of items) {
       if (!isRecord(it)) continue
-      const pid = it.producto_id
-      const cant = it.cantidad
+      const pid = it.product_id
+      const qty = it.quantity
 
       if (typeof pid !== 'string' || !isUuid(pid)) continue
 
       if (
-        typeof cant !== 'number' ||
-        !Number.isInteger(cant) ||
-        cant < CANTIDAD_MIN ||
-        cant > CANTIDAD_MAX
+        typeof qty !== 'number' ||
+        !Number.isInteger(qty) ||
+        qty < QTY_MIN ||
+        qty > QTY_MAX
       ) {
         return NextResponse.json(
-          { error: `La cantidad debe ser un número entero entre ${CANTIDAD_MIN} y ${CANTIDAD_MAX}.` },
+          {
+            error: `La cantidad debe ser un número entero entre ${QTY_MIN} y ${QTY_MAX}.`,
+          },
           { status: 400 }
         )
       }
 
-      parsedItems.push({ producto_id: pid, cantidad: cant })
+      parsedItems.push({ product_id: pid, quantity: qty })
     }
 
     if (parsedItems.length === 0) {
@@ -104,38 +102,37 @@ export async function POST(request: Request) {
       )
     }
 
-    const canal: ConversacionCanal =
-      canalRaw === 'whatsapp' || canalRaw === 'pwa' ? canalRaw : 'pwa'
+    const channel: Channel =
+      channelRaw === 'whatsapp' || channelRaw === 'pwa' ? channelRaw : 'pwa'
 
-    const result = await crearPedido({
-      caficultorId: user.id,
-      almacenId: almacenId,
-      canal,
-      notas,
+    const result = await createOrder({
+      farmerId: user.id,
+      warehouseId,
+      channel,
+      notes,
       items: parsedItems,
     })
 
-    // Notificar al almacén por WhatsApp (no bloquea si falla)
-    const { data: alm } = await supabase
-      .from('almacenes')
-      .select('nombre, telefono_whatsapp')
-      .eq('id', almacenId)
+    const { data: wh } = await supabase
+      .from('warehouses')
+      .select('name, whatsapp_phone')
+      .eq('id', warehouseId)
       .maybeSingle()
 
-    if (alm?.telefono_whatsapp) {
+    if (wh?.whatsapp_phone) {
       try {
         await enviarMensajeWhatsApp(
-          alm.telefono_whatsapp,
-          `Nuevo pedido ${result.numero} en GranoVivo. Revisa el panel o responde por aquí.`
+          wh.whatsapp_phone,
+          `Nuevo pedido ${result.orderNumber} en GranoVivo. Revisa el panel o responde por aquí.`
         )
       } catch {
-        /* WhatsApp es opcional — continúa si faltan env vars */
+        /* WhatsApp optional */
       }
     }
 
     return NextResponse.json({
-      id: result.pedidoId,
-      numero: result.numero,
+      id: result.orderId,
+      order_number: result.orderNumber,
       subtotal: result.subtotal,
       total: result.total,
     })

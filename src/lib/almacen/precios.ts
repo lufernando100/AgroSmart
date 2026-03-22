@@ -1,122 +1,122 @@
 import { createClient } from '@/lib/supabase/server'
 
-function productoDesdeJoin(
+function productFromJoin(
   raw: unknown
-): { nombre: string; presentacion: string | null; unidad_medida: string } | null {
+): { name: string; presentation: string | null; unit_of_measure: string } | null {
   const p = Array.isArray(raw) ? raw[0] : raw
   if (typeof p !== 'object' || p === null) return null
   const o = p as Record<string, unknown>
-  const nombre = o.nombre
-  const unidad_medida = o.unidad_medida
-  if (typeof nombre !== 'string' || typeof unidad_medida !== 'string') return null
-  const presentacion = o.presentacion
+  const name = o.name
+  const unit_of_measure = o.unit_of_measure
+  if (typeof name !== 'string' || typeof unit_of_measure !== 'string') return null
+  const presentation = o.presentation
   return {
-    nombre,
-    presentacion: typeof presentacion === 'string' ? presentacion : null,
-    unidad_medida,
+    name,
+    presentation: typeof presentation === 'string' ? presentation : null,
+    unit_of_measure,
   }
 }
 
-export type PrecioAlmacenFila = {
-  precio_id: string
-  producto_id: string
-  nombre: string
-  presentacion: string | null
-  unidad_medida: string
-  precio_unitario: number
-  disponible: boolean
+export type WarehousePriceRow = {
+  price_id: string
+  product_id: string
+  name: string
+  presentation: string | null
+  unit_of_measure: string
+  unit_price: number
+  is_available: boolean
 }
 
-export async function listarPreciosAlmacen(
-  usuarioAlmacenId: string
-): Promise<PrecioAlmacenFila[]> {
+export async function listWarehousePrices(
+  warehouseUserId: string
+): Promise<WarehousePriceRow[]> {
   const supabase = await createClient()
-  const { data: alm } = await supabase
-    .from('almacenes')
+  const { data: wh } = await supabase
+    .from('warehouses')
     .select('id')
-    .eq('usuario_id', usuarioAlmacenId)
+    .eq('user_id', warehouseUserId)
     .maybeSingle()
 
-  if (!alm?.id) return []
+  if (!wh?.id) return []
 
   const { data, error } = await supabase
-    .from('precios')
+    .from('prices')
     .select(
-      'id, precio_unitario, disponible, producto_id, productos ( nombre, presentacion, unidad_medida )'
+      'id, unit_price, is_available, product_id, products ( name, presentation, unit_of_measure )'
     )
-    .eq('almacen_id', alm.id)
-    .order('producto_id')
+    .eq('warehouse_id', wh.id)
+    .order('product_id')
 
   if (error) throw new Error(error.message)
 
-  const rows: PrecioAlmacenFila[] = []
+  const rows: WarehousePriceRow[] = []
   for (const r of data ?? []) {
     if (typeof r !== 'object' || r === null) continue
     const row = r as Record<string, unknown>
     const id = row.id
-    const producto_id = row.producto_id
-    const pu = row.precio_unitario
-    if (typeof id !== 'string' || typeof producto_id !== 'string') continue
-    const prod = productoDesdeJoin(row.productos)
+    const product_id = row.product_id
+    const pu = row.unit_price
+    if (typeof id !== 'string' || typeof product_id !== 'string') continue
+    const prod = productFromJoin(row.products)
     if (!prod) continue
-    const precioNum = typeof pu === 'number' ? pu : Number(pu)
-    if (!Number.isFinite(precioNum)) continue
+    const priceNum = typeof pu === 'number' ? pu : Number(pu)
+    if (!Number.isFinite(priceNum)) continue
     rows.push({
-      precio_id: id,
-      producto_id,
-      nombre: prod.nombre,
-      presentacion: prod.presentacion,
-      unidad_medida: prod.unidad_medida,
-      precio_unitario: precioNum,
-      disponible: row.disponible !== false,
+      price_id: id,
+      product_id,
+      name: prod.name,
+      presentation: prod.presentation,
+      unit_of_measure: prod.unit_of_measure,
+      unit_price: priceNum,
+      is_available: row.is_available !== false,
     })
   }
 
-  rows.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  rows.sort((a, b) => a.name.localeCompare(b.name, 'es'))
   return rows
 }
 
-export async function actualizarPrecioAlmacen(params: {
-  usuarioAlmacenId: string
-  precioId: string
-  precio_unitario?: number
-  disponible?: boolean
+export async function updateWarehousePrice(params: {
+  warehouseUserId: string
+  priceId: string
+  unit_price?: number
+  is_available?: boolean
 }): Promise<void> {
   const supabase = await createClient()
-  const { data: alm } = await supabase
-    .from('almacenes')
+  const { data: wh } = await supabase
+    .from('warehouses')
     .select('id')
-    .eq('usuario_id', params.usuarioAlmacenId)
+    .eq('user_id', params.warehouseUserId)
     .maybeSingle()
 
-  if (!alm?.id) throw new Error('No se encontró almacén asociado a tu cuenta.')
+  if (!wh?.id) throw new Error('No se encontró almacén asociado a tu cuenta.')
 
   const { data: pr, error: e0 } = await supabase
-    .from('precios')
-    .select('id, almacen_id')
-    .eq('id', params.precioId)
+    .from('prices')
+    .select('id, warehouse_id')
+    .eq('id', params.priceId)
     .maybeSingle()
 
   if (e0) throw new Error(e0.message)
-  if (!pr || pr.almacen_id !== alm.id) {
+  if (!pr || pr.warehouse_id !== wh.id) {
     throw new Error('Precio no encontrado o sin permiso.')
   }
 
   const update: Record<string, string | number | boolean> = {
-    actualizado_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   }
-  if (params.precio_unitario !== undefined) {
-    if (params.precio_unitario < 0) throw new Error('Precio inválido.')
-    update.precio_unitario = params.precio_unitario
+  if (params.unit_price !== undefined) {
+    if (params.unit_price < 0) throw new Error('Precio inválido.')
+    update.unit_price = params.unit_price
   }
-  if (params.disponible !== undefined) {
-    update.disponible = params.disponible
+  if (params.is_available !== undefined) {
+    update.is_available = params.is_available
   }
 
   const { error } = await supabase
-    .from('precios')
+    .from('prices')
     .update(update)
-    .eq('id', params.precioId)
+    .eq('id', params.priceId)
 
   if (error) throw new Error(error.message)
 }

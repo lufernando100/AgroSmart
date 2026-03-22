@@ -1,15 +1,10 @@
--- ============================================================
--- Catálogo legible vía API (PostgREST / supabase-js)
--- Ejecutar en Supabase SQL Editor si Table Editor muestra datos
--- pero la API REST devuelve 0 filas (RLS activo sin políticas).
--- ============================================================
+-- Catalog readable via PostgREST (disable RLS on read-heavy tables)
+ALTER TABLE public.categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.warehouses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prices DISABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.categorias DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.productos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.almacenes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.precios DISABLE ROW LEVEL SECURITY;
-
-GRANT SELECT ON public.categorias TO anon, authenticated, service_role;
-GRANT SELECT ON public.productos TO anon, authenticated, service_role;
-GRANT SELECT ON public.almacenes TO anon, authenticated, service_role;
-GRANT SELECT ON public.precios TO anon, authenticated, service_role;
+GRANT SELECT ON public.categories TO anon, authenticated, service_role;
+GRANT SELECT ON public.products TO anon, authenticated, service_role;
+GRANT SELECT ON public.warehouses TO anon, authenticated, service_role;
+GRANT SELECT ON public.prices TO anon, authenticated, service_role;

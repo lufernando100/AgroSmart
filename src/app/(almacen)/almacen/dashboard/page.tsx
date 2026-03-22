@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { resumenDashboardAlmacen } from '@/lib/pedidos/service'
+import { warehouseDashboardSummary } from '@/lib/pedidos/service'
 
 export default async function AlmacenDashboardPage() {
   const supabase = await createClient()
@@ -12,7 +12,7 @@ export default async function AlmacenDashboardPage() {
     return null
   }
 
-  const res = await resumenDashboardAlmacen(user.id)
+  const res = await warehouseDashboardSummary(user.id)
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -32,7 +32,7 @@ export default async function AlmacenDashboardPage() {
             Pedidos pendientes
           </p>
           <p className="mt-2 text-3xl font-bold text-emerald-800 dark:text-emerald-400">
-            {res.pendientes}
+            {res.pending}
           </p>
           <p className="mt-2 text-sm text-emerald-700 underline dark:text-emerald-500">
             Ver pedidos →
@@ -44,7 +44,7 @@ export default async function AlmacenDashboardPage() {
             Ingresos confirmados hoy
           </p>
           <p className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            {res.ingresosHoy.toLocaleString('es-CO', {
+            {res.revenueToday.toLocaleString('es-CO', {
               style: 'currency',
               currency: 'COP',
               maximumFractionDigits: 0,

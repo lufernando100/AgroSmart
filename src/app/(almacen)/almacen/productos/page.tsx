@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { listarPreciosAlmacen } from '@/lib/almacen/precios'
+import { listWarehousePrices } from '@/lib/almacen/precios'
 import { ProductosPrecios } from './ProductosPrecios'
 
 export default async function AlmacenProductosPage() {
@@ -12,7 +12,7 @@ export default async function AlmacenProductosPage() {
     return null
   }
 
-  const filas = await listarPreciosAlmacen(user.id)
+  const filas = await listWarehousePrices(user.id)
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">

@@ -15,8 +15,8 @@ export default async function InicioPage() {
     redirect('/')
   }
 
-  const rol = user.user_metadata?.rol as string | undefined
-  if (rol === 'almacen' || rol === 'admin') {
+  const role = user.user_metadata?.role as string | undefined
+  if (role === 'warehouse' || role === 'admin') {
     redirect('/almacen/dashboard')
   }
 

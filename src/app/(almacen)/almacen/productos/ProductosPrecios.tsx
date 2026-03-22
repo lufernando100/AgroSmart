@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import type { PrecioAlmacenFila } from '@/lib/almacen/precios'
+import type { WarehousePriceRow } from '@/lib/almacen/precios'
 
-export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) {
+export function ProductosPrecios({ initial }: { initial: WarehousePriceRow[] }) {
   const [filas, setFilas] = useState(initial)
   const [editing, setEditing] = useState<string | null>(null)
   const [precioDraft, setPrecioDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  async function guardarPrecio(precioId: string) {
+  async function guardarPrecio(priceId: string) {
     const digits = precioDraft.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
     const n = Number(digits)
     if (!Number.isFinite(n) || n < 0) {
@@ -18,12 +18,12 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
       return
     }
     setError(null)
-    setLoadingId(precioId)
+    setLoadingId(priceId)
     try {
-      const res = await fetch(`/api/almacen/precios/${precioId}`, {
+      const res = await fetch(`/api/almacen/precios/${priceId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ precio_unitario: n }),
+        body: JSON.stringify({ unit_price: n }),
       })
       const json = (await res.json()) as { error?: string }
       if (!res.ok) {
@@ -31,7 +31,7 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
         return
       }
       setFilas((rows) =>
-        rows.map((r) => (r.precio_id === precioId ? { ...r, precio_unitario: n } : r))
+        rows.map((r) => (r.price_id === priceId ? { ...r, unit_price: n } : r))
       )
       setEditing(null)
     } finally {
@@ -39,14 +39,14 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
     }
   }
 
-  async function toggleDisponible(precioId: string, disponible: boolean) {
+  async function toggleDisponible(priceId: string, is_available: boolean) {
     setError(null)
-    setLoadingId(precioId)
+    setLoadingId(priceId)
     try {
-      const res = await fetch(`/api/almacen/precios/${precioId}`, {
+      const res = await fetch(`/api/almacen/precios/${priceId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ disponible: !disponible }),
+        body: JSON.stringify({ is_available: !is_available }),
       })
       const json = (await res.json()) as { error?: string }
       if (!res.ok) {
@@ -55,7 +55,7 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
       }
       setFilas((rows) =>
         rows.map((r) =>
-          r.precio_id === precioId ? { ...r, disponible: !disponible } : r
+          r.price_id === priceId ? { ...r, is_available: !is_available } : r
         )
       )
     } finally {
@@ -74,19 +74,19 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
         ) : null}
         {filas.map((r) => (
           <li
-            key={r.precio_id}
+            key={r.price_id}
             className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">{r.nombre}</p>
-                {r.presentacion ? (
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{r.presentacion}</p>
+                <p className="font-medium text-zinc-900 dark:text-zinc-50">{r.name}</p>
+                {r.presentation ? (
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{r.presentation}</p>
                 ) : null}
-                <p className="text-xs text-zinc-500">{r.unidad_medida}</p>
+                <p className="text-xs text-zinc-500">{r.unit_of_measure}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {editing === r.precio_id ? (
+                {editing === r.price_id ? (
                   <>
                     <input
                       type="text"
@@ -98,8 +98,8 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
                     />
                     <button
                       type="button"
-                      disabled={loadingId === r.precio_id}
-                      onClick={() => void guardarPrecio(r.precio_id)}
+                      disabled={loadingId === r.price_id}
+                      onClick={() => void guardarPrecio(r.price_id)}
                       className="rounded-lg bg-emerald-700 px-3 py-1 text-sm text-white"
                     >
                       Guardar
@@ -115,7 +115,7 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
                 ) : (
                   <>
                     <span className="font-semibold text-emerald-800 dark:text-emerald-400">
-                      {r.precio_unitario.toLocaleString('es-CO', {
+                      {r.unit_price.toLocaleString('es-CO', {
                         style: 'currency',
                         currency: 'COP',
                         maximumFractionDigits: 0,
@@ -124,8 +124,8 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
                     <button
                       type="button"
                       onClick={() => {
-                        setEditing(r.precio_id)
-                        setPrecioDraft(String(Math.round(r.precio_unitario)))
+                        setEditing(r.price_id)
+                        setPrecioDraft(String(Math.round(r.unit_price)))
                       }}
                       className="text-sm font-medium text-emerald-800 underline dark:text-emerald-400"
                     >
@@ -135,15 +135,15 @@ export function ProductosPrecios({ initial }: { initial: PrecioAlmacenFila[] }) 
                 )}
                 <button
                   type="button"
-                  disabled={loadingId === r.precio_id}
-                  onClick={() => void toggleDisponible(r.precio_id, r.disponible)}
+                  disabled={loadingId === r.price_id}
+                  onClick={() => void toggleDisponible(r.price_id, r.is_available)}
                   className={`rounded-lg px-3 py-1 text-sm font-medium ${
-                    r.disponible
+                    r.is_available
                       ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
                       : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200'
                   }`}
                 >
-                  {r.disponible ? 'Disponible' : 'Agotado'}
+                  {r.is_available ? 'Disponible' : 'Agotado'}
                 </button>
               </div>
             </div>

@@ -1,12 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
-  confirmarPedidoPorWhatsAppAdmin,
-  rechazarPedidoPorWhatsAppAdmin,
+  confirmOrderByWhatsAppAdmin,
+  rejectOrderByWhatsAppAdmin,
 } from '@/lib/pedidos/service'
 import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
 
 /**
- * Si el mensaje es SI/NO y el remitente coincide con `telefono_whatsapp` de un almacén,
+ * Si el mensaje es SI/NO y el remitente coincide con `whatsapp_phone` de un almacén,
  * confirma o rechaza el pedido pendiente más reciente de ese almacén.
  */
 export async function intentarProcesarSiNoAlmacen(
@@ -21,54 +21,54 @@ export async function intentarProcesarSiNoAlmacen(
   const admin = createAdminClient()
   const d = telefonoFromDigits.replace(/\D/g, '')
 
-  const { data: almacenes, error } = await admin
-    .from('almacenes')
+  const { data: warehouses, error } = await admin
+    .from('warehouses')
     .select('id')
-    .eq('telefono_whatsapp', d)
+    .eq('whatsapp_phone', d)
     .limit(1)
 
-  if (error || !almacenes?.length) return false
+  if (error || !warehouses?.length) return false
 
-  const almacenId = almacenes[0].id as string
+  const warehouseId = warehouses[0].id as string
 
-  const { data: pedido } = await admin
-    .from('pedidos')
-    .select('id, numero, caficultor_id')
-    .eq('almacen_id', almacenId)
-    .eq('estado', 'pendiente')
+  const { data: order } = await admin
+    .from('orders')
+    .select('id, order_number, farmer_id')
+    .eq('warehouse_id', warehouseId)
+    .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  if (!pedido) return false
+  if (!order) return false
 
-  const pedidoId = pedido.id as string
-  const numero = pedido.numero as string
-  const caficultorId = pedido.caficultor_id as string
+  const orderId = order.id as string
+  const orderNumber = order.order_number as string
+  const farmerId = order.farmer_id as string
 
   try {
     if (esSi) {
-      await confirmarPedidoPorWhatsAppAdmin(pedidoId)
+      await confirmOrderByWhatsAppAdmin(orderId)
     } else {
       const motivo =
         texto.trim().length > 2 ? texto.trim().slice(2).trim() : ''
-      await rechazarPedidoPorWhatsAppAdmin(
-        pedidoId,
+      await rejectOrderByWhatsAppAdmin(
+        orderId,
         motivo || 'Rechazado por almacén'
       )
     }
 
-    const { data: cafi } = await admin
-      .from('usuarios')
-      .select('telefono')
-      .eq('id', caficultorId)
+    const { data: farmer } = await admin
+      .from('users')
+      .select('phone')
+      .eq('id', farmerId)
       .maybeSingle()
 
-    const telCaf = cafi?.telefono as string | undefined
+    const telCaf = farmer?.phone as string | undefined
     if (telCaf) {
       const msg = esSi
-        ? `Tu pedido ${numero} quedó confirmado. GranoVivo.`
-        : `Tu pedido ${numero} no pudo ser atendido por el almacén. GranoVivo.`
+        ? `Tu pedido ${orderNumber} quedó confirmado. GranoVivo.`
+        : `Tu pedido ${orderNumber} no pudo ser atendido por el almacén. GranoVivo.`
       await enviarMensajeWhatsApp(telCaf, msg)
     }
   } catch {
@@ -80,4 +80,3 @@ export async function intentarProcesarSiNoAlmacen(
 
   return true
 }
-

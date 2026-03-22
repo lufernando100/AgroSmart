@@ -1,40 +1,48 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import type { PedidoAlmacenLista } from '@/lib/pedidos/service'
-import type { PedidoEstado } from '@/types/database'
+import type { WarehouseOrderRow } from '@/lib/pedidos/service'
+import type { OrderStatus } from '@/types/database'
 
-type Fila = PedidoAlmacenLista
+type Fila = WarehouseOrderRow
 
-type Tab = PedidoEstado | 'todos'
+type Tab = OrderStatus | 'todos'
 
 const tabs: { key: Tab; label: string }[] = [
-  { key: 'pendiente', label: 'Pendientes' },
-  { key: 'confirmado', label: 'Confirmados' },
-  { key: 'entregado', label: 'Entregados' },
-  { key: 'rechazado', label: 'Rechazados' },
+  { key: 'pending', label: 'Pendientes' },
+  { key: 'confirmed', label: 'Confirmados' },
+  { key: 'delivered', label: 'Entregados' },
+  { key: 'rejected', label: 'Rechazados' },
   { key: 'todos', label: 'Todos' },
 ]
 
+const statusLabelEs: Record<OrderStatus, string> = {
+  pending: 'Pendiente',
+  confirmed: 'Confirmado',
+  rejected: 'Rechazado',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
+}
+
 export function PedidosTabs({ pedidos }: { pedidos: Fila[] }) {
-  const [tab, setTab] = useState<Tab>('pendiente')
+  const [tab, setTab] = useState<Tab>('pending')
   const [actionId, setActionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const filtrados = useMemo(() => {
     if (tab === 'todos') return pedidos
-    return pedidos.filter((p) => p.estado === tab)
+    return pedidos.filter((p) => p.status === tab)
   }, [pedidos, tab])
 
   async function patch(
-    pedidoId: string,
+    orderId: string,
     accion: 'confirmar' | 'rechazar' | 'entregar',
     extra?: { notas_almacen?: string; precio_confirmado_almacen?: number }
   ) {
     setError(null)
-    setActionId(pedidoId)
+    setActionId(orderId)
     try {
-      const res = await fetch(`/api/pedidos/${pedidoId}`, {
+      const res = await fetch(`/api/pedidos/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accion, ...extra }),
@@ -85,18 +93,18 @@ export function PedidosTabs({ pedidos }: { pedidos: Fila[] }) {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-mono font-semibold text-zinc-900 dark:text-zinc-50">
-                  {p.numero}
+                  {p.order_number}
                 </p>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {p.usuarios?.nombre ?? 'Caficultor'}{' '}
-                  {p.usuarios?.telefono ? `· ${p.usuarios.telefono}` : ''}
+                  {p.users?.name ?? 'Caficultor'}{' '}
+                  {p.users?.phone ? `· ${p.users.phone}` : ''}
                 </p>
                 <p className="text-sm text-zinc-500">
                   {new Date(p.created_at).toLocaleString('es-CO')}
                 </p>
                 <p className="mt-1 text-sm">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">Estado:</span>{' '}
-                  {p.estado}
+                  {statusLabelEs[p.status]}
                 </p>
                 <p className="text-sm">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">Total:</span>{' '}
@@ -108,7 +116,7 @@ export function PedidosTabs({ pedidos }: { pedidos: Fila[] }) {
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                {p.estado === 'pendiente' ? (
+                {p.status === 'pending' ? (
                   <>
                     <button
                       type="button"
@@ -136,7 +144,7 @@ export function PedidosTabs({ pedidos }: { pedidos: Fila[] }) {
                     </button>
                   </>
                 ) : null}
-                {p.estado === 'confirmado' ? (
+                {p.status === 'confirmed' ? (
                   <button
                     type="button"
                     disabled={actionId === p.id}

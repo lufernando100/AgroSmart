@@ -74,11 +74,11 @@ export default function DevFlujosPage() {
 
         <section className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-900 dark:bg-zinc-900">
           <h2 className="text-lg font-semibold text-amber-900 dark:text-amber-200">
-            Almacén (requiere rol almacén + usuario_id en almacenes)
+            Almacén (requiere rol warehouse + user_id en warehouses)
           </h2>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            En Supabase: <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">usuarios.rol = almacen</code>{' '}
-            y <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">almacenes.usuario_id</code> = tu UUID de
+            En Supabase: <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">users.role = warehouse</code>{' '}
+            y <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">warehouses.user_id</code> = tu UUID de
             auth.
           </p>
           <ol className="mt-4 list-decimal space-y-3 pl-5 text-zinc-700 dark:text-zinc-300">
