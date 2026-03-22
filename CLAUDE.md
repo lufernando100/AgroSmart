@@ -14,6 +14,7 @@ supabase gen types typescript --local > src/types/supabase.ts  # Regenerar tipos
 ---
 
 ## ESTADO ACTUAL DEL PROYECTO
+> Ver `PLAN.md` para el seguimiento detallado con estados por tarea
 
 **Completado:**
 - Setup Next.js 14+ con TypeScript, Tailwind, App Router
