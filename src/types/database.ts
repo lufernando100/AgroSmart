@@ -60,6 +60,15 @@ export interface Lote {
   updated_at: string
 }
 
+export interface Categoria {
+  id: string
+  nombre: string
+  sector: SectorTipo
+  icono?: string
+  orden: number
+  activo: boolean
+}
+
 export interface Almacen {
   id: string
   usuario_id?: string

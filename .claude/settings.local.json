@@ -12,7 +12,15 @@
       "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/04_wireframes.md /c/Users/luis.hernandezf/Documents/AgroSmart/docs/04_wireframes.md)",
       "Bash(cp /c/Users/luis.hernandezf/Documents/Rafa/files/05_datos_semilla.sql /c/Users/luis.hernandezf/Documents/AgroSmart/database/05_datos_semilla.sql)",
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run:*)",
+      "Bash(node -e \"require\\(''@supabase/supabase-js''\\)\")",
+      "Bash(node -e \"require\\(''@supabase/ssr''\\)\")",
+      "Bash(node -e \"require\\(''@anthropic-ai/sdk''\\)\")",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)"
     ]
   }
 }

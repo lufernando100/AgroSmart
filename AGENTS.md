@@ -368,6 +368,50 @@ El objetivo es tener un flujo completo de pedido funcionando antes de cualquier 
 - Tres entornos: development, preview (cada PR), production
 - Validar firma del webhook de Meta en cada request
 
+### Validaciones de campos — OBLIGATORIO en todo formulario y API route
+
+| Campo | Regla cliente | Regla servidor |
+|---|---|---|
+| `notas` / textarea libre | `maxLength={500}`, counter visual | Rechazar si `.trim().length > 500` |
+| `cantidad` | `min=1`, `max=9999`, integer | Rechazar si `< 1`, `> 9999`, o no entero |
+| UUIDs (producto_id, almacen_id) | n/a | Validar con `isUuid()` antes de usar |
+| Texto de búsqueda | n/a | Escapar `%` y `_` antes de `ilike` |
+
+### Mensajes de error al usuario — OBLIGATORIO
+
+- **NUNCA** exponer mensajes crudos de Postgres (código 23503, nombres de tablas, etc.)
+- Usar `friendlyDbError(err)` de `src/lib/utils/db-errors.ts` en todo `catch` de BD
+- Usar el componente `<MensajeError>` de `src/components/ui/MensajeError.tsx` para mostrar errores
+  - Incluye `role="alert"` para accesibilidad
+  - Incluye botón "Reintentar" opcional
+- Para estados vacíos: `<MensajeVacio>` de `src/components/ui/MensajeVacio.tsx`
+- Nunca mostrar stack traces, nombres de columnas, ni códigos HTTP al usuario
+
+### Protección FK antes de INSERT en pedidos
+
+Antes de insertar en `pedidos`, verificar siempre que `caficultor_id` existe en `public.usuarios`:
+```ts
+const { data: cafRow } = await supabase.from('usuarios').select('id').eq('id', caficultorId).maybeSingle()
+if (!cafRow) throw new Error('Tu perfil no está listo. Cierra sesión, vuelve a entrar e intenta de nuevo.')
+```
+Esto previene el error crudo de FK que vería el usuario final.
+
+### Fotos de productos
+
+- Se almacenan en `productos.metadata.foto_url` (JSONB)
+- Siempre mostrar placeholder con inicial del nombre si `foto_url` es null
+- Usar `<Image>` de next/image — nunca `<img>`
+- El placeholder usa colores de la paleta de diseño (verde/tierra/neutro)
+
+### Tests negativos — OBLIGATORIO
+
+Todo componente o servicio que:
+- Hace INSERT en BD → test con FK violation → verificar mensaje amigable
+- Tiene formulario → tests con valores vacíos, demasiado largos, negativos, tipo incorrecto
+- Llama a una API externa → test cuando la API falla → verificar manejo de error
+
+Los tests deben verificar que el **texto que ve el usuario** es en español y sin jerga técnica.
+
 ---
 
 ## PRINCIPIO MÁS IMPORTANTE

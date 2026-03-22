@@ -19,50 +19,51 @@
 - ✅ Clientes Supabase: browser, server, admin
 - ✅ Archivos de referencia en `database/` y `docs/`
 - ✅ Instalar `@supabase/supabase-js` y `@supabase/ssr`
-- ⏳ Crear proyecto en Supabase y configurar `.env.local`
-- ⏳ Ejecutar `database/01_modelo_datos.sql` en Supabase
-- ⏳ Ejecutar `database/05_datos_semilla.sql` en Supabase
+- ✅ Crear proyecto en Supabase y configurar `.env.local`
+- ✅ Ejecutar `database/01_modelo_datos.sql` en Supabase
+- ✅ Ejecutar `database/05_datos_semilla.sql` en Supabase
+- ✅ `database/06_catalogo_api_lectura.sql` — catálogo legible vía API (RLS/grants)
 - ⏳ Generar tipos con `supabase gen types typescript`
-- ⏳ Login por OTP con teléfono (`/api/auth/otp`)
-- ⏳ Middleware de protección de rutas (caficultor vs almacén)
+- ✅ Login por OTP con teléfono (`POST /api/auth/otp` — send / verify) + página `/login`
+- ✅ Middleware de protección de rutas (caficultor vs almacén; sesión Supabase)
 
 ### 1.2 Catálogo de productos
-- ⏳ `GET /api/productos` — lista con filtros por categoría
-- ⏳ `GET /api/productos/buscar` — búsqueda por texto + distancia (PostGIS)
-- ⏳ Página `/catalogo` — lista con precio más bajo y número de almacenes
-- ⏳ Página `/catalogo/[id]` — detalle con comparador de precios por almacén
+- ✅ `GET /api/productos` — lista con filtros por categoría (`categoria_id`, `sector`)
+- ✅ `GET /api/productos/buscar` — texto (`q`) + opcional `lat`/`lng` (PostGIS vía RPC; ejecutar `database/07_fn_productos_distancia.sql`)
+- ✅ Página `/catalogo` — lista con precio desde y número de almacenes
+- ✅ Página `/catalogo/[id]` — detalle con comparador de precios por almacén
 
 ### 1.3 Flujo de pedido
-- ⏳ `POST /api/pedidos` — crear pedido, calcular total
-- ⏳ `PATCH /api/pedidos/[id]` — confirmar / rechazar / entregar
-- ⏳ Página `/catalogo/pedido` — selector de almacén, cantidad, notas
-- ⏳ Página de confirmación con número de pedido (GV-XXXXX) y estado
-- ⏳ Supabase Realtime para actualizar estado del pedido en tiempo real
+- ✅ `POST /api/pedidos` — crear pedido, calcular total
+- ✅ `PATCH /api/pedidos/[id]` — confirmar / rechazar / entregar
+- ✅ Página `/catalogo/pedido` — selector vía `producto_id` + `almacen_id`, cantidad, notas
+- ✅ Página `/catalogo/pedido/confirmacion` — número (GV-XXXXX) y estado
+- ✅ Supabase Realtime en cliente (`PedidoEstadoRealtime`) — ejecutar `database/09_realtime_pedidos.sql` en Supabase
 
 ### 1.4 Panel del almacén
-- ⏳ `/almacen/dashboard` — pedidos pendientes (badge), ingresos del día
-- ⏳ `/almacen/pedidos` — tabs: Pendientes | Confirmados | Entregados | Rechazados
-- ⏳ Acciones: confirmar, rechazar (con razón), cambiar precio
-- ⏳ Notificación automática al caficultor al confirmar/rechazar
-- ⏳ `/almacen/productos` — editar precio en línea, toggle disponible/agotado
+- ✅ `/almacen/dashboard` — pedidos pendientes, ingresos del día
+- ✅ `/almacen/pedidos` — tabs: Pendientes | Confirmados | Entregados | Rechazados | Todos
+- ✅ Acciones: confirmar, rechazar (con motivo), marcar entregado
+- ✅ Notificación automática al caficultor al confirmar/rechazar (`PATCH` + `enviarMensajeWhatsApp`)
+- ✅ `/almacen/productos` — editar precio en línea, toggle disponible/agotado (`PATCH /api/almacen/precios/[id]`)
 
 ### 1.5 Webhook de WhatsApp
-- ⏳ `GET /api/whatsapp/webhook` — verificación inicial de Meta
-- ⏳ `POST /api/whatsapp/webhook` — recibir y validar firma de Meta
-- ⏳ Parsear tipos: texto, audio, imagen, ubicación
-- ⏳ Patrón asíncrono: responder 200 inmediato, procesar en background
-- ⏳ Historial de conversación en tabla `conversaciones`
-- ⏳ Integrar Claude API con system prompt + tools
-- ⏳ Tool `buscar_productos` implementada y conectada a BD
-- ⏳ Tool `crear_pedido` implementada y conectada a BD
-- ⏳ Tool `notificar_almacen` implementada
-- ⏳ Si nota de voz → transcribir con Whisper antes de enviar a Claude
+- ✅ `GET /api/whatsapp/webhook` — verificación inicial de Meta
+- ✅ `POST /api/whatsapp/webhook` — recibir y validar firma de Meta
+- ✅ Parsear tipos: texto, audio (y extensible a imagen/ubicación en código)
+- ✅ Patrón asíncrono: responder 200 inmediato, procesar en background
+- ✅ Historial de conversación en tabla `conversaciones`
+- ✅ Integrar Claude API con system prompt + tools
+- ✅ Tool `buscar_productos` implementada y conectada a BD
+- ✅ Tool `crear_pedido` implementada y conectada a BD
+- ✅ Tool `notificar_almacen` implementada
+- ✅ Nota de voz → transcribir con Whisper antes de enviar a Claude
 
 ### 1.6 Notificaciones WhatsApp
-- ⏳ Función `enviarMensajeWhatsApp(telefono, mensaje)`
-- ⏳ Notificar almacén cuando llega pedido nuevo
-- ⏳ Notificar caficultor cuando almacén confirma / rechaza
-- ⏳ Almacén responde SI/NO por WhatsApp → actualizar estado del pedido
+- ✅ Función `enviarMensajeWhatsApp(telefono, mensaje)` (`src/lib/whatsapp/send.ts`)
+- ✅ Notificar almacén cuando llega pedido nuevo (`POST /api/pedidos`)
+- ✅ Notificar caficultor cuando almacén confirma / rechaza (`PATCH /api/pedidos/[id]`)
+- ✅ Almacén responde SI/NO por WhatsApp → actualizar estado (`intentarProcesarSiNoAlmacen`)
 
 ---
 
@@ -133,6 +134,50 @@
 
 ---
 
+## DISEÑO UI/UX
+> Archivos de referencia de diseño agregados al proyecto
+
+- ✅ `docs/06_diseno_ui.md` — Especificación completa de diseño: paleta de colores (tierra/café), tipografía (Plus Jakarta Sans), espaciado, componentes, iconografía, responsive, accesibilidad
+- ✅ `docs/PROMPT_COMPLETO.md` — Prompt de desarrollo completo con contexto del proyecto, arquitectura, modelo de datos, flujos
+
+### Pendientes de implementar (diseño)
+- ⏳ Fuente Plus Jakarta Sans (Google Fonts) — actualmente usa fuentes por defecto
+- ⏳ Paleta de colores tierra/café (CSS variables) — actualmente usa Tailwind emerald/zinc genérico
+- ⏳ Fondos neutral-50 (beige cálido) en vez de blanco puro
+- ⏳ Touch targets 48px mínimo en todos los botones
+- ⏳ Texto cuerpo 17px (actualmente usa text-base = 16px)
+- ⏳ Cards con border-radius 12px, sombras cálidas y borde neutral-200
+- ⏳ Tab bar inferior del caficultor (5 tabs con iconos Lucide)
+- ⏳ Skeleton loading para catálogo, precios, pedidos
+- ⏳ Estados vacíos con ilustración y acción clara
+- ⏳ Modo oscuro con paleta invertida
+- ⏳ Service Worker para PWA offline
+
+---
+
+## PRUEBAS AUTOMATIZADAS
+> Infraestructura: Vitest + React Testing Library
+
+### Tests unitarios (utilidades puras)
+- ✅ `src/lib/auth/phone.test.ts` — normalización teléfonos colombianos E.164 (10 tests)
+- ✅ `src/lib/utils/format.test.ts` — formatCOP, formatFecha, formatRelativo, formatKm (15 tests)
+- ✅ `src/lib/catalogo/uuid.test.ts` — validación UUID (7 tests)
+- ✅ `src/lib/whatsapp/verifySignature.test.ts` — firma HMAC de Meta (6 tests)
+- ✅ `src/lib/supabase/env.test.ts` — validación de variables de entorno (8 tests)
+
+### Tests de lógica de negocio (con mocks)
+- ✅ `src/lib/whatsapp/send.test.ts` — envío WhatsApp, validación, API mock (6 tests)
+- ✅ `src/lib/whatsapp/processIncoming.test.ts` — procesamiento webhook entrante (7 tests)
+- ✅ `src/lib/ai/execute-tools.test.ts` — ejecución de tools del asistente (8 tests)
+
+### Tests de componentes React
+- ✅ `src/app/login/login-form.test.tsx` — flujo OTP: teléfono → código → verificación (9 tests)
+- ✅ `src/components/pedidos/PedidoEstadoRealtime.test.tsx` — estados del pedido en tiempo real (6 tests)
+
+**Total: 81 tests, 10 archivos — `npm test`**
+
+---
+
 ## BLOQUEADOS
 > Tareas que no pueden avanzar por alguna dependencia externa
 
@@ -146,4 +191,11 @@ _Ninguno por ahora._
 |---|---|
 | 2026-03-21 | Setup inicial completado. Dependencias instaladas: Next.js, Supabase, Claude SDK, OpenAI (Whisper). El proyecto compila sin errores. |
 | 2026-03-21 | Próximo paso: crear proyecto en Supabase, ejecutar SQLs y configurar .env.local |
+| 2026-03-21 | OTP API, sync `usuarios`↔auth (service role), middleware y placeholders `/catalogo`, `/almacen/dashboard`. |
+| 2026-03-21 | `01_modelo_datos.sql` aplicado en Supabase (RLS y tablas OK). Siguiente: `05_datos_semilla.sql`. |
+| 2026-03-21 | Semilla corregida: IDs UUID válidos (antes `cat-fert`/`prod-001` fallaban con el esquema). Vuelve a ejecutar `05_datos_semilla.sql` en Supabase. |
+| 2026-03-21 | `06_catalogo_api_lectura.sql` aplicado; `npm run test:supabase` OK (6 cat, 21 prod, 3 alm, 15 precios). |
+| 2026-03-21 | Catálogo 1.2: APIs `/api/productos`, `/api/productos/buscar`, páginas `/catalogo` y `/catalogo/[id]`, `lib/catalogo/queries.ts`. RPC distancia: `database/07_fn_productos_distancia.sql`. |
+| 2026-03-21 | Fase 1.3–1.6: flujo PWA pedido/confirmación + Realtime (`09_realtime_pedidos.sql`), panel almacén (dashboard, pedidos, productos), API `PATCH /api/almacen/precios/[id]`, WhatsApp envío + webhook asíncrono + SI/NO almacén. |
+| 2026-03-21 | Revisión Fase 1: build OK, 0 errores TypeScript. Agregados docs de diseño UI (`06_diseno_ui.md`, `PROMPT_COMPLETO.md`). Infraestructura de testing con Vitest + RTL: 81 tests cubriendo utils, lógica de negocio y componentes React. |
 
