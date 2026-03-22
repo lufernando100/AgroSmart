@@ -18,7 +18,7 @@
 - ✅ Tipos TypeScript de todas las entidades (`src/types/database.ts`)
 - ✅ Clientes Supabase: browser, server, admin
 - ✅ Archivos de referencia en `database/` y `docs/`
-- ⏳ Instalar `@supabase/supabase-js` y `@supabase/ssr`
+- ✅ Instalar `@supabase/supabase-js` y `@supabase/ssr`
 - ⏳ Crear proyecto en Supabase y configurar `.env.local`
 - ⏳ Ejecutar `database/01_modelo_datos.sql` en Supabase
 - ⏳ Ejecutar `database/05_datos_semilla.sql` en Supabase
@@ -144,5 +144,6 @@ _Ninguno por ahora._
 
 | Fecha | Nota |
 |---|---|
-| 2026-03-21 | Setup inicial completado. Próximo paso: crear proyecto en Supabase y configurar .env.local |
+| 2026-03-21 | Setup inicial completado. Dependencias instaladas: Next.js, Supabase, Claude SDK, OpenAI (Whisper). El proyecto compila sin errores. |
+| 2026-03-21 | Próximo paso: crear proyecto en Supabase, ejecutar SQLs y configurar .env.local |
 
