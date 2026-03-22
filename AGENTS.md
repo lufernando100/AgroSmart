@@ -97,6 +97,8 @@ OPENAI_API_KEY=
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 ```
 
+**Producción (Vercel, redirects Supabase, webhook WhatsApp):** ver `docs/DEPLOY.md`.
+
 ---
 
 ## MODELO DE DATOS — TABLAS PRINCIPALES

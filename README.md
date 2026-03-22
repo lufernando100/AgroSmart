@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgroSmart (GranoVivo)
 
-## Getting Started
+Marketplace y asistente para caficultores (Next.js + Supabase). La interfaz es en español; el código y el esquema de BD están en inglés.
 
-First, run the development server:
+## Desarrollo
 
 ```bash
+npm ci
+cp .env.local.example .env.local
+# Completa Supabase y el resto de claves en .env.local
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Calidad (como en CI)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run ci
+```
 
-## Learn More
+## Despliegue a producción
 
-To learn more about Next.js, take a look at the following resources:
+Guía paso a paso (Vercel, Supabase, variables, WhatsApp): **[docs/DEPLOY.md](docs/DEPLOY.md)**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentación del producto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `AGENTS.md` — contexto técnico y plan por fases  
+- `PLAN.md` — seguimiento de tareas  
+- `CLAUDE.md` — comandos y reglas rápidas para el agente  
 
-## Deploy on Vercel
+## Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Next.js (App Router), TypeScript, Tailwind, Supabase (Auth, Postgres, Realtime), Claude API, WhatsApp Cloud API.
