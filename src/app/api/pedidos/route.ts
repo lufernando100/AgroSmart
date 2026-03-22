@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createOrder } from '@/lib/pedidos/service'
-import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
+import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import { isUuid } from '@/lib/catalogo/uuid'
 import { friendlyDbError } from '@/lib/utils/db-errors'
 import type { Channel } from '@/types/database'
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
 
     if (wh?.whatsapp_phone) {
       try {
-        await enviarMensajeWhatsApp(
+        await sendWhatsAppMessage(
           wh.whatsapp_phone,
           `Nuevo pedido ${result.orderNumber} en GranoVivo. Revisa el panel o responde por aquí.`
         )

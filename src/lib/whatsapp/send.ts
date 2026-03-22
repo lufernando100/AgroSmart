@@ -1,20 +1,20 @@
 /**
- * Envía un mensaje de texto por WhatsApp Cloud API (Meta).
- * `telefono` puede ser con o sin + (se normaliza a dígitos).
+ * Sends a text message via WhatsApp Cloud API (Meta).
+ * `phone` can be with or without + (normalized to digits only).
  */
-export async function enviarMensajeWhatsApp(
-  telefono: string,
-  mensaje: string
+export async function sendWhatsAppMessage(
+  phone: string,
+  message: string
 ): Promise<{ ok: boolean; error?: string }> {
   const token = process.env.WHATSAPP_TOKEN
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
   if (!token || !phoneId) {
-    return { ok: false, error: 'WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID no configurados.' }
+    return { ok: false, error: 'WHATSAPP_TOKEN or WHATSAPP_PHONE_NUMBER_ID not configured.' }
   }
 
-  const digits = telefono.replace(/\D/g, '')
+  const digits = phone.replace(/\D/g, '')
   if (digits.length < 10) {
-    return { ok: false, error: 'Teléfono inválido.' }
+    return { ok: false, error: 'Invalid phone number.' }
   }
 
   const url = `https://graph.facebook.com/v21.0/${phoneId}/messages`
@@ -28,7 +28,7 @@ export async function enviarMensajeWhatsApp(
       messaging_product: 'whatsapp',
       to: digits,
       type: 'text',
-      text: { body: mensaje },
+      text: { body: message },
     }),
   })
 

@@ -14,7 +14,7 @@ vi.mock('@/lib/users/lookup', () => ({
 }))
 
 vi.mock('@/lib/whatsapp/send', () => ({
-  enviarMensajeWhatsApp: vi.fn().mockResolvedValue({ ok: true }),
+  sendWhatsAppMessage: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
 vi.mock('@/lib/whatsapp/almacenRespuesta', () => ({
@@ -35,7 +35,7 @@ vi.mock('@/lib/whatsapp/claudeWhatsApp', () => ({
 
 import { processIncomingWebhook } from './processIncoming'
 import { intentarProcesarSiNoAlmacen } from './almacenRespuesta'
-import { enviarMensajeWhatsApp } from './send'
+import { sendWhatsAppMessage } from './send'
 import { findUserByPhoneDigits } from '@/lib/users/lookup'
 
 function makeWebhookBody(from: string, text: string) {
@@ -66,47 +66,47 @@ describe('processIncomingWebhook', () => {
     vi.clearAllMocks()
   })
 
-  it('no hace nada con body null', async () => {
+  it('does nothing with a null body', async () => {
     await processIncomingWebhook(null)
-    expect(enviarMensajeWhatsApp).not.toHaveBeenCalled()
+    expect(sendWhatsAppMessage).not.toHaveBeenCalled()
   })
 
-  it('no hace nada con body sin entry', async () => {
+  it('does nothing with a body that has no entry array', async () => {
     await processIncomingWebhook({ foo: 'bar' })
-    expect(enviarMensajeWhatsApp).not.toHaveBeenCalled()
+    expect(sendWhatsAppMessage).not.toHaveBeenCalled()
   })
 
-  it('no hace nada con entry vacío', async () => {
+  it('does nothing with an empty entry array', async () => {
     await processIncomingWebhook({ entry: [] })
-    expect(enviarMensajeWhatsApp).not.toHaveBeenCalled()
+    expect(sendWhatsAppMessage).not.toHaveBeenCalled()
   })
 
-  it('intenta procesar SI/NO de almacén primero', async () => {
+  it('tries the warehouse SI/NO handler first', async () => {
     vi.mocked(intentarProcesarSiNoAlmacen).mockResolvedValueOnce(true)
     await processIncomingWebhook(makeWebhookBody('573001234567', 'SI'))
     expect(intentarProcesarSiNoAlmacen).toHaveBeenCalledWith('573001234567', 'SI')
   })
 
-  it('envía mensaje de usuario no registrado', async () => {
+  it('sends an unregistered-user message when the phone is not found', async () => {
     vi.mocked(intentarProcesarSiNoAlmacen).mockResolvedValueOnce(false)
     vi.mocked(findUserByPhoneDigits).mockResolvedValueOnce(null)
 
     await processIncomingWebhook(makeWebhookBody('573001234567', 'Hola'))
 
-    expect(enviarMensajeWhatsApp).toHaveBeenCalledWith(
+    expect(sendWhatsAppMessage).toHaveBeenCalledWith(
       '573001234567',
       expect.stringContaining('no encontramos tu número')
     )
   })
 
-  it('no hace nada con texto vacío', async () => {
+  it('does nothing when the message text is empty', async () => {
     vi.mocked(intentarProcesarSiNoAlmacen).mockResolvedValueOnce(false)
 
     await processIncomingWebhook(makeWebhookBody('573001234567', ''))
     expect(findUserByPhoneDigits).not.toHaveBeenCalled()
   })
 
-  it('no lanza excepción con payload malformado', async () => {
+  it('does not throw with a malformed payload', async () => {
     await expect(
       processIncomingWebhook({ entry: [{ changes: [{ value: {} }] }] })
     ).resolves.toBeUndefined()

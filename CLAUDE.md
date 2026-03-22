@@ -2,6 +2,27 @@
 
 ---
 
+## CODE LANGUAGE RULE
+
+```
+Everything a DEVELOPER sees  →  ENGLISH
+Everything a USER sees       →  SPANISH (Colombian)
+```
+
+| Layer | Language | Examples |
+|---|---|---|
+| Variable and state names | ✅ English | `quantity`, `notes`, `isAvailable` |
+| Function names | ✅ English | `createOrder()`, `sendWhatsAppMessage()` |
+| TypeScript types and interfaces | ✅ English | `ProductSummary`, `OrderStatus`, `State` |
+| Component props | ✅ English | `categories`, `unitPrice`, `activeCategoryId` |
+| API JSON fields | ✅ English | `warehouse_id`, `action`, `confirmed_price` |
+| File names | ✅ English | already correct |
+| Code comments | ✅ English | `// Strip non-numeric chars from phone` |
+| Button labels, placeholders, error messages | 🇨🇴 Spanish | `"Pedir aquí"`, `"Sin conexión…"` |
+| AI system prompt and responses | 🇨🇴 Spanish | content for the farmer |
+
+---
+
 ## COMANDOS
 
 ```bash
@@ -106,8 +127,8 @@ Si ves `foreign key constraint "pedidos_caficultor_id_fkey"`:
 
 | Archivo | Para qué sirve |
 |---|---|
-| `database/01_modelo_datos.sql` | Esquema completo — leer antes de tocar la BD |
-| `database/05_datos_semilla.sql` | Datos de ejemplo para desarrollo |
+| `database/01_data_model.sql` | Esquema completo — leer antes de tocar la BD |
+| `database/05_seed_data.sql` | Datos de ejemplo para desarrollo |
 | `docs/02_system_prompt_tools.ts` | System prompt y 11 tools del asistente IA |
 | `docs/03_flujos_whatsapp.md` | 8 flujos conversacionales completos |
 | `docs/04_wireframes.md` | Todas las pantallas de la PWA |

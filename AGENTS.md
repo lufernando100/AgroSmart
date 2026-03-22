@@ -40,8 +40,8 @@ Mapas:               Google Maps Platform
 ```
 AgroSmart/
 ├── database/
-│   ├── 01_modelo_datos.sql     # Esquema completo PostgreSQL/PostGIS — LEER ANTES DE TOCAR BD
-│   └── 05_datos_semilla.sql    # Datos de ejemplo: categorías, productos, almacenes, precios
+│   ├── 01_data_model.sql       # Esquema completo PostgreSQL/PostGIS — LEER ANTES DE TOCAR BD
+│   └── 05_seed_data.sql        # Datos de ejemplo: categorías, productos, almacenes, precios
 ├── docs/
 │   ├── 02_system_prompt_tools.ts  # System prompt y 11 tools del asistente IA
 │   ├── 03_flujos_whatsapp.md      # 8 flujos conversacionales completos
@@ -101,7 +101,7 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 
 ## MODELO DE DATOS — TABLAS PRINCIPALES
 
-El esquema completo está en `database/01_modelo_datos.sql`. Leerlo antes de escribir cualquier query.
+El esquema completo está en `database/01_data_model.sql`. Leerlo antes de escribir cualquier query.
 
 **Entidades core:**
 - `usuarios` — caficultores, almacenes, admins. Login por OTP. Campo `sector` para multi-sector futuro.
@@ -213,8 +213,8 @@ El objetivo es tener un flujo completo de pedido funcionando antes de cualquier 
 
 **Tarea 1.1 — Conexión a Supabase y Auth**
 - Instalar `@supabase/supabase-js` y `@supabase/ssr`
-- Ejecutar `database/01_modelo_datos.sql` en el proyecto de Supabase
-- Ejecutar `database/05_datos_semilla.sql` para datos de ejemplo
+- Ejecutar `database/01_data_model.sql` en el proyecto de Supabase
+- Ejecutar `database/05_seed_data.sql` para datos de ejemplo
 - Implementar login por OTP: `/api/auth/otp` → Supabase Auth con teléfono
 - Middleware de protección de rutas (caficultor vs almacén)
 - Generar tipos con `supabase gen types typescript --local > src/types/supabase.ts`
@@ -323,7 +323,7 @@ El objetivo es tener un flujo completo de pedido funcionando antes de cualquier 
 ## REGLAS DE DESARROLLO
 
 ### Idioma: código en inglés, producto en español
-- **Código y datos:** nombres en inglés — tablas, columnas, enums SQL; variables, funciones, tipos TypeScript; claves JSON de API y `user_metadata` (p. ej. `role`, `warehouse_id`). Commits en español siguen siendo válidos.
+- **Código y datos:** nombres en inglés — tablas, columnas, enums SQL; archivos en `database/` (p. ej. `01_data_model.sql`, `05_seed_data.sql`); variables, funciones, tipos TypeScript; claves JSON de API y `user_metadata` (p. ej. `role`, `warehouse_id`). Commits en español siguen siendo válidos.
 - **Interfaz y mensajes al usuario:** español colombiano (PWA, WhatsApp del negocio, textos de error amigables, `aria-label` orientados al usuario). Los mensajes técnicos de logs pueden estar en inglés.
 - **Asistente IA:** el system prompt y las tools pueden mezclar español donde haga falta para el tono cafetero; los identificadores en código que implementan las tools siguen la convención en inglés.
 

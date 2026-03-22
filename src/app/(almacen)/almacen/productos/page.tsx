@@ -8,23 +8,18 @@ export default async function AlmacenProductosPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
   const filas = await listWarehousePrices(user.id)
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Productos y precios
-      </h1>
-      <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        Ajusta precio o marca como agotado. El historial se guarda en la base de datos al
-        cambiar el valor.
+    <div className="px-6 py-6">
+      <h1 className="text-2xl font-bold text-[#252320]">Productos y precios</h1>
+      <p className="mt-1 text-sm text-[#736E64]">
+        Ajusta precios o marca como agotado. El historial se guarda automáticamente.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <ProductosPrecios initial={filas} />
       </div>
     </div>

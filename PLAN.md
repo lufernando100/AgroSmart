@@ -20,16 +20,16 @@
 - ✅ Archivos de referencia en `database/` y `docs/`
 - ✅ Instalar `@supabase/supabase-js` y `@supabase/ssr`
 - ✅ Crear proyecto en Supabase y configurar `.env.local`
-- ✅ Ejecutar `database/01_modelo_datos.sql` en Supabase
-- ✅ Ejecutar `database/05_datos_semilla.sql` en Supabase
-- ✅ `database/06_catalogo_api_lectura.sql` — catálogo legible vía API (RLS/grants)
+- ✅ Ejecutar `database/01_data_model.sql` en Supabase
+- ✅ Ejecutar `database/05_seed_data.sql` en Supabase
+- ✅ `database/06_catalog_api_read.sql` — catálogo legible vía API (RLS/grants)
 - ⏳ Generar tipos con `supabase gen types typescript`
 - ✅ Login por OTP con teléfono (`POST /api/auth/otp` — send / verify) + página `/login`
 - ✅ Middleware de protección de rutas (caficultor vs almacén; sesión Supabase)
 
 ### 1.2 Catálogo de productos
 - ✅ `GET /api/productos` — lista con filtros por categoría (`categoria_id`, `sector`)
-- ✅ `GET /api/productos/buscar` — texto (`q`) + opcional `lat`/`lng` (PostGIS vía RPC; ejecutar `database/07_fn_productos_distancia.sql`)
+- ✅ `GET /api/productos/buscar` — texto (`q`) + opcional `lat`/`lng` (PostGIS vía RPC; ejecutar `database/07_fn_products_distance.sql`)
 - ✅ Página `/catalogo` — lista con precio desde y número de almacenes
 - ✅ Página `/catalogo/[id]` — detalle con comparador de precios por almacén
 
@@ -38,7 +38,7 @@
 - ✅ `PATCH /api/pedidos/[id]` — confirmar / rechazar / entregar
 - ✅ Página `/catalogo/pedido` — selector vía `producto_id` + `almacen_id`, cantidad, notas
 - ✅ Página `/catalogo/pedido/confirmacion` — número (GV-XXXXX) y estado
-- ✅ Supabase Realtime en cliente (`PedidoEstadoRealtime`) — ejecutar `database/09_realtime_pedidos.sql` en Supabase
+- ✅ Supabase Realtime en cliente (`PedidoEstadoRealtime`) — ejecutar `database/09_realtime_orders.sql` en Supabase
 
 ### 1.4 Panel del almacén
 - ✅ `/almacen/dashboard` — pedidos pendientes, ingresos del día
@@ -201,11 +201,11 @@ _Ninguno por ahora._
 | 2026-03-21 | Setup inicial completado. Dependencias instaladas: Next.js, Supabase, Claude SDK, OpenAI (Whisper). El proyecto compila sin errores. |
 | 2026-03-21 | Próximo paso: crear proyecto en Supabase, ejecutar SQLs y configurar .env.local |
 | 2026-03-21 | OTP API, sync `usuarios`↔auth (service role), middleware y placeholders `/catalogo`, `/almacen/dashboard`. |
-| 2026-03-21 | `01_modelo_datos.sql` aplicado en Supabase (RLS y tablas OK). Siguiente: `05_datos_semilla.sql`. |
-| 2026-03-21 | Semilla corregida: IDs UUID válidos (antes `cat-fert`/`prod-001` fallaban con el esquema). Vuelve a ejecutar `05_datos_semilla.sql` en Supabase. |
-| 2026-03-21 | `06_catalogo_api_lectura.sql` aplicado; `npm run test:supabase` OK (6 cat, 21 prod, 3 alm, 15 precios). |
-| 2026-03-21 | Catálogo 1.2: APIs `/api/productos`, `/api/productos/buscar`, páginas `/catalogo` y `/catalogo/[id]`, `lib/catalogo/queries.ts`. RPC distancia: `database/07_fn_productos_distancia.sql`. |
-| 2026-03-21 | Fase 1.3–1.6: flujo PWA pedido/confirmación + Realtime (`09_realtime_pedidos.sql`), panel almacén (dashboard, pedidos, productos), API `PATCH /api/almacen/precios/[id]`, WhatsApp envío + webhook asíncrono + SI/NO almacén. |
+| 2026-03-21 | `01_data_model.sql` aplicado en Supabase (RLS y tablas OK). Siguiente: `05_seed_data.sql`. |
+| 2026-03-21 | Semilla corregida: IDs UUID válidos (antes `cat-fert`/`prod-001` fallaban con el esquema). Vuelve a ejecutar `05_seed_data.sql` en Supabase. |
+| 2026-03-21 | `06_catalog_api_read.sql` aplicado; `npm run test:supabase` OK (6 cat, 21 prod, 3 alm, 15 precios). |
+| 2026-03-21 | Catálogo 1.2: APIs `/api/productos`, `/api/productos/buscar`, páginas `/catalogo` y `/catalogo/[id]`, `lib/catalogo/queries.ts`. RPC distancia: `database/07_fn_products_distance.sql`. |
+| 2026-03-21 | Fase 1.3–1.6: flujo PWA pedido/confirmación + Realtime (`09_realtime_orders.sql`), panel almacén (dashboard, pedidos, productos), API `PATCH /api/almacen/precios/[id]`, WhatsApp envío + webhook asíncrono + SI/NO almacén. |
 | 2026-03-21 | Revisión Fase 1: build OK, 0 errores TypeScript. Agregados docs de diseño UI (`06_diseno_ui.md`, `PROMPT_COMPLETO.md`). Infraestructura de testing con Vitest + RTL: 81 tests cubriendo utils, lógica de negocio y componentes React. |
 | 2026-03-22 | Bug crítico: cookies de sesión perdían opciones (httpOnly, maxAge) al propagarse en `/api/auth/otp`. Fix: buffer `pendingCookies` captura opciones completas de `setAll`. |
 | 2026-03-22 | Diseño aplicado: paleta tierra/café, Plus Jakarta Sans, layout responsive con sidebar desktop (md+) + tab bar mobile. Se descartó vista de teléfono centrada. |

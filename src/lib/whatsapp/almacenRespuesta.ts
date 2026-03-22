@@ -3,7 +3,7 @@ import {
   confirmOrderByWhatsAppAdmin,
   rejectOrderByWhatsAppAdmin,
 } from '@/lib/pedidos/service'
-import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
+import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 
 /**
  * Si el mensaje es SI/NO y el remitente coincide con `whatsapp_phone` de un almacén,
@@ -69,10 +69,10 @@ export async function intentarProcesarSiNoAlmacen(
       const msg = esSi
         ? `Tu pedido ${orderNumber} quedó confirmado. GranoVivo.`
         : `Tu pedido ${orderNumber} no pudo ser atendido por el almacén. GranoVivo.`
-      await enviarMensajeWhatsApp(telCaf, msg)
+      await sendWhatsAppMessage(telCaf, msg)
     }
   } catch {
-    await enviarMensajeWhatsApp(
+    await sendWhatsAppMessage(
       d,
       'No pudimos actualizar el pedido. Intenta de nuevo o usa el panel web.'
     )

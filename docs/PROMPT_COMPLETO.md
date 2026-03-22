@@ -93,7 +93,7 @@ Mapas:               Google Maps Platform (mejor cobertura satelital en zona rur
 
 ## MODELO DE DATOS
 
-El archivo `01_modelo_datos.sql` contiene el esquema completo de 20 tablas con PostGIS. Las tablas principales son:
+El archivo `01_data_model.sql` contiene el esquema completo de 20 tablas con PostGIS. Las tablas principales son:
 
 ### Entidades core
 - `usuarios` — Caficultores, almacenes, admins. Login por OTP/SMS. Campo `sector` para multi-sector.
@@ -211,7 +211,7 @@ El archivo `04_wireframes.md` describe todas las pantallas:
 
 ## DATOS SEMILLA
 
-El archivo `05_datos_semilla.sql` contiene:
+El archivo `05_seed_data.sql` contiene:
 - 6 categorias de productos
 - 22 productos reales (fertilizantes, agroquimicos, enmiendas, herramientas)
 - 3 almacenes de ejemplo en Pitalito, Huila
@@ -410,11 +410,11 @@ No intentes construir los 60 requerimientos antes de lanzar. Construye el flujo 
 
 Este prompt viene acompanado de 5 archivos que debes usar como base:
 
-1. `01_modelo_datos.sql` — Esquema completo de PostgreSQL/PostGIS. Ejecutar en Supabase.
+1. `01_data_model.sql` — Esquema completo de PostgreSQL/PostGIS. Ejecutar en Supabase.
 2. `02_system_prompt_tools.ts` — System prompt y definicion de 11 tools para Claude.
 3. `03_flujos_whatsapp.md` — 8 flujos conversacionales completos (caficultor + almacen).
 4. `04_wireframes.md` — Todas las pantallas de la PWA con contenido detallado.
-5. `05_datos_semilla.sql` — Productos, almacenes y precios de ejemplo + tablas Cenicafe.
+5. `05_seed_data.sql` — Productos, almacenes y precios de ejemplo + tablas Cenicafe.
 
 Empieza por el setup del proyecto (Next.js + Supabase + Vercel), ejecuta el modelo de datos, y construye el flujo de pedido completo como primera funcionalidad.
 # ESPECIFICACION DE DISENO UI/UX — GRANOVIVO

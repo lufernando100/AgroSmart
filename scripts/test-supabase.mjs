@@ -108,7 +108,7 @@ console.log(
 
 if (anonErr) {
   if (missingTable(anonErr.message)) {
-    console.log('OK — API responde; tabla `usuarios` no existe aún (ejecuta database/01_modelo_datos.sql).')
+    console.log('OK — API responde; tabla `users` no existe aún (ejecuta database/01_data_model.sql).')
   } else if (
     anonErr.message.includes('Invalid API key') ||
     anonErr.message.includes('JWT')

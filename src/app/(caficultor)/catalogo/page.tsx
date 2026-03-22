@@ -15,32 +15,32 @@ type PageProps = {
 export default async function CatalogoPage({ searchParams }: PageProps) {
   const sp = await searchParams
   const sector = parseSectorQuery(sp.sector ?? null)
-  const categoriaId =
+  const categoryId =
     sp.categoria_id && isUuid(sp.categoria_id) ? sp.categoria_id : undefined
 
-  const [categorias, productos, preciosPorProducto] = await Promise.all([
+  const [categories, products, bestPricesByProduct] = await Promise.all([
     listActiveCategories(),
-    listProductSummaries({ sector, categoryId: categoriaId }),
+    listProductSummaries({ sector, categoryId }),
     listBestPricesByProduct(),
   ])
 
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
-      {/* Header */}
+      {/* Sticky header with product count */}
       <header className="sticky top-0 z-30 border-b border-[#E8E4DD] bg-[#FAFAF8] px-4 py-3">
         <h1 className="text-xl font-bold text-[#252320]">Catálogo</h1>
         <p className="text-sm text-[#736E64]">
-          {productos.length} producto{productos.length !== 1 ? 's' : ''} disponible{productos.length !== 1 ? 's' : ''}
+          {products.length} producto{products.length !== 1 ? 's' : ''} disponible{products.length !== 1 ? 's' : ''}
         </p>
       </header>
 
       <div className="px-4 pt-4">
         <Suspense>
           <CatalogoCliente
-            categorias={categorias}
-            productos={productos}
-            categoriaIdActiva={categoriaId ?? null}
-            preciosPorProducto={preciosPorProducto}
+            categories={categories}
+            products={products}
+            activeCategoryId={categoryId ?? null}
+            bestPricesByProduct={bestPricesByProduct}
           />
         </Suspense>
       </div>

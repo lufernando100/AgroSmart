@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-/** IDs alineados con `database/05_datos_semilla.sql` */
+/** IDs alineados con `database/05_seed_data.sql` */
 const SEMILLA = {
   producto: '30000000-0000-4000-8000-000000000001',
   almacen: '20000000-0000-4000-8000-000000000001',

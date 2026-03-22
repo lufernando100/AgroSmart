@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createOrderAdmin } from '@/lib/pedidos/service'
 import { searchProductsTextOnly } from '@/lib/catalogo/queries'
-import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
+import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import type { Channel } from '@/types/database'
 
 export type ToolResult = { name: string; result: unknown }
@@ -80,7 +80,7 @@ export async function ejecutarTool(params: {
 
     if (wh?.whatsapp_phone) {
       try {
-        await enviarMensajeWhatsApp(
+        await sendWhatsAppMessage(
           wh.whatsapp_phone as string,
           `Nuevo pedido ${out.orderNumber} en GranoVivo. Productos: ${items.length} línea(s).`
         )
@@ -106,7 +106,7 @@ export async function ejecutarTool(params: {
     if (!telefono || !mensaje) {
       return { name, result: { error: 'telefono o mensaje faltante' } }
     }
-    const r = await enviarMensajeWhatsApp(telefono, mensaje)
+    const r = await sendWhatsAppMessage(telefono, mensaje)
     return { name, result: r }
   }
 

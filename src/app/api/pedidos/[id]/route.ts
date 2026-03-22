@@ -5,13 +5,14 @@ import {
   cancelOrderByFarmer,
   getOrderForUser,
 } from '@/lib/pedidos/service'
-import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
+import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import { isUuid } from '@/lib/catalogo/uuid'
 
+/** Body shape for PATCH /api/pedidos/[id] */
 type PatchBody = {
-  accion?: 'confirmar' | 'rechazar' | 'entregar' | 'cancelar'
-  precio_confirmado_almacen?: number
-  notas_almacen?: string
+  action?: 'confirm' | 'reject' | 'deliver' | 'cancel'
+  confirmed_price?: number
+  warehouse_notes?: string
 }
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -79,10 +80,11 @@ export async function PATCH(
     }
 
     const body = json as PatchBody
-    const accion = body.accion
+    const action = body.action
     const role = user.user_metadata?.role as string | undefined
 
-    if (accion === 'cancelar') {
+    // Farmer cancels their own order
+    if (action === 'cancel') {
       if (role === 'warehouse') {
         return NextResponse.json({ error: 'No permitido.' }, { status: 403 })
       }
@@ -90,61 +92,58 @@ export async function PATCH(
       return NextResponse.json({ ok: true })
     }
 
-    if (
-      accion === 'confirmar' ||
-      accion === 'rechazar' ||
-      accion === 'entregar'
-    ) {
+    // Warehouse actions: confirm, reject, deliver
+    if (action === 'confirm' || action === 'reject' || action === 'deliver') {
       if (role !== 'warehouse' && role !== 'admin') {
         return NextResponse.json({ error: 'No permitido.' }, { status: 403 })
       }
 
-      const precio =
-        typeof body.precio_confirmado_almacen === 'number'
-          ? body.precio_confirmado_almacen
-          : undefined
-      const notas =
-        typeof body.notas_almacen === 'string' ? body.notas_almacen : undefined
+      const confirmedPrice =
+        typeof body.confirmed_price === 'number' ? body.confirmed_price : undefined
+      const warehouseNotes =
+        typeof body.warehouse_notes === 'string' ? body.warehouse_notes : undefined
 
       const out = await updateOrderByWarehouse({
         orderId: id,
         warehouseUserId: user.id,
-        action: accion,
-        confirmedPrice: precio,
-        warehouseNotes: notas,
+        action,
+        confirmedPrice,
+        warehouseNotes,
       })
 
-      const { data: orderRow } = await supabase
-        .from('orders')
-        .select('order_number, farmer_id')
-        .eq('id', id)
-        .maybeSingle()
+      // Notify farmer via WhatsApp when order is confirmed or rejected
+      if (action === 'confirm' || action === 'reject') {
+        const { data: orderRow } = await supabase
+          .from('orders')
+          .select('order_number, farmer_id')
+          .eq('id', id)
+          .maybeSingle()
 
-      const { data: farmer } = await supabase
-        .from('users')
-        .select('phone')
-        .eq('id', orderRow?.farmer_id as string)
-        .maybeSingle()
+        const { data: farmer } = await supabase
+          .from('users')
+          .select('phone')
+          .eq('id', orderRow?.farmer_id as string)
+          .maybeSingle()
 
-      const phone = farmer?.phone as string | undefined
-
-      if (phone && (accion === 'confirmar' || accion === 'rechazar')) {
-        const num = (orderRow as { order_number?: string })?.order_number ?? id
-        const msg =
-          accion === 'confirmar'
-            ? `Tu pedido ${num} fue confirmado por el almacén. GranoVivo.`
-            : `Tu pedido ${num} no pudo ser atendido. Motivo: ${notas ?? '—'}. GranoVivo.`
-        try {
-          await enviarMensajeWhatsApp(phone, msg)
-        } catch {
-          /* optional */
+        const phone = farmer?.phone as string | undefined
+        if (phone) {
+          const num = (orderRow as { order_number?: string })?.order_number ?? id
+          const msg =
+            action === 'confirm'
+              ? `Tu pedido ${num} fue confirmado por el almacén. GranoVivo.`
+              : `Tu pedido ${num} no pudo ser atendido. Motivo: ${warehouseNotes ?? '—'}. GranoVivo.`
+          try {
+            await sendWhatsAppMessage(phone, msg)
+          } catch {
+            /* WhatsApp notification is optional — order update still succeeds */
+          }
         }
       }
 
       return NextResponse.json({ ok: true, ...out })
     }
 
-    return NextResponse.json({ error: 'accion inválida.' }, { status: 400 })
+    return NextResponse.json({ error: 'Acción no válida.' }, { status: 400 })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Error.'
     return NextResponse.json({ error: message }, { status: 400 })

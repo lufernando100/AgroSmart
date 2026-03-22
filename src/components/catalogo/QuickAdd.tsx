@@ -11,15 +11,15 @@ type Props = {
   warehouseName: string
   unitPrice: number
   productName: string
-  /** Callback cuando el pedido se crea exitosamente */
+  /** Callback when the order is successfully created */
   onOrderCreated?: (orderId: string) => void
 }
 
-type Estado = 'idle' | 'open' | 'loading' | 'ok' | 'error'
+type State = 'idle' | 'open' | 'loading' | 'ok' | 'error'
 
 /**
- * Botón "+" que abre un mini-selector de cantidad directamente en la tarjeta
- * del catálogo, sin navegar al detalle. Reduce el flujo de compra de 4 taps a 3.
+ * "+" button that opens a mini quantity selector directly on the catalog card
+ * without navigating to the detail page. Reduces the purchase flow from 4 taps to 3.
  */
 export function QuickAdd({
   productId,
@@ -30,54 +30,54 @@ export function QuickAdd({
   onOrderCreated,
 }: Props) {
   const router = useRouter()
-  const [estado, setEstado] = useState<Estado>('idle')
-  const [cantidad, setCantidad] = useState(1)
+  const [state, setState] = useState<State>('idle')
+  const [quantity, setQuantity] = useState(1)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
 
-  const cerrar = useCallback(() => {
-    setEstado('idle')
+  const close = useCallback(() => {
+    setState('idle')
     setErrorMsg(null)
   }, [])
 
-  // Cerrar con Escape
+  // Close on Escape key
   useEffect(() => {
-    if (estado !== 'open') return
+    if (state !== 'open') return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') cerrar()
+      if (e.key === 'Escape') close()
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [estado, cerrar])
+  }, [state, close])
 
-  // Cerrar al hacer clic fuera
+  // Close on click outside the drawer
   useEffect(() => {
-    if (estado !== 'open') return
+    if (state !== 'open') return
     const handler = (e: MouseEvent) => {
       if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        cerrar()
+        close()
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [estado, cerrar])
+  }, [state, close])
 
-  function abrir(e: React.MouseEvent) {
+  function open(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    setCantidad(1)
+    setQuantity(1)
     setErrorMsg(null)
-    setEstado('open')
+    setState('open')
   }
 
-  function cambiarCantidad(delta: number) {
-    setCantidad((c) => Math.min(9999, Math.max(1, c + delta)))
+  function changeQuantity(delta: number) {
+    setQuantity((q) => Math.min(9999, Math.max(1, q + delta)))
   }
 
-  async function confirmar(e: React.MouseEvent) {
+  async function confirm(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    setEstado('loading')
+    setState('loading')
     setErrorMsg(null)
 
     try {
@@ -87,37 +87,38 @@ export function QuickAdd({
         credentials: 'include',
         body: JSON.stringify({
           warehouse_id: warehouseId,
-          items: [{ product_id: productId, quantity: cantidad }],
+          items: [{ product_id: productId, quantity }],
           channel: 'pwa',
         }),
       })
       const json = (await res.json()) as { error?: string; id?: string }
       if (!res.ok) {
         setErrorMsg(json.error ?? 'No se pudo crear el pedido.')
-        setEstado('error')
+        setState('error')
         return
       }
-      setEstado('ok')
+      setState('ok')
       if (json.id) {
         onOrderCreated?.(json.id)
+        // Brief pause to show the success tick before navigating
         setTimeout(() => {
           router.push(`/catalogo/pedido/confirmacion?id=${encodeURIComponent(json.id!)}`)
         }, 600)
       }
     } catch {
       setErrorMsg('Sin conexión. Verifica tu internet.')
-      setEstado('error')
+      setState('error')
     }
   }
 
-  const subtotal = unitPrice * cantidad
+  const subtotal = unitPrice * quantity
 
-  if (estado === 'idle') {
+  if (state === 'idle') {
     return (
       <button
         type="button"
         aria-label={`Agregar ${productName} al pedido`}
-        onClick={abrir}
+        onClick={open}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2D7A2D] text-white shadow-md transition-all active:scale-90 hover:bg-[#236023] hover:shadow-lg"
       >
         <Plus size={18} strokeWidth={2.5} aria-hidden />
@@ -134,7 +135,7 @@ export function QuickAdd({
       onClick={(e) => e.stopPropagation()}
       className="absolute inset-x-0 bottom-0 z-20 rounded-b-xl border-t border-[#E8E4DD] bg-white p-4 shadow-[0_-4px_24px_rgba(18,17,16,0.12)] transition-all duration-200 translate-y-0 opacity-100"
     >
-      {/* Encabezado */}
+      {/* Drawer header */}
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-[#252320] leading-tight">{productName}</p>
@@ -143,20 +144,20 @@ export function QuickAdd({
         <button
           type="button"
           aria-label="Cerrar"
-          onClick={cerrar}
+          onClick={close}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F5F3EF] text-[#736E64]"
         >
           <X size={14} aria-hidden />
         </button>
       </div>
 
-      {/* Selector de cantidad + precio */}
+      {/* Quantity selector + price */}
       <div className="flex items-center gap-3">
         <button
           type="button"
           aria-label="Restar uno"
-          disabled={cantidad <= 1 || estado === 'loading' || estado === 'ok'}
-          onClick={() => cambiarCantidad(-1)}
+          disabled={quantity <= 1 || state === 'loading' || state === 'ok'}
+          onClick={() => changeQuantity(-1)}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40 active:scale-90"
         >
           <Minus size={16} aria-hidden />
@@ -164,17 +165,17 @@ export function QuickAdd({
 
         <span
           aria-live="polite"
-          aria-label={`${cantidad} bultos`}
+          aria-label={`${quantity} bultos`}
           className="tabular-nums w-8 text-center text-xl font-bold text-[#252320]"
         >
-          {cantidad}
+          {quantity}
         </span>
 
         <button
           type="button"
           aria-label="Sumar uno"
-          disabled={cantidad >= 9999 || estado === 'loading' || estado === 'ok'}
-          onClick={() => cambiarCantidad(1)}
+          disabled={quantity >= 9999 || state === 'loading' || state === 'ok'}
+          onClick={() => changeQuantity(1)}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40 active:scale-90"
         >
           <Plus size={16} aria-hidden />
@@ -190,35 +191,35 @@ export function QuickAdd({
         </div>
       </div>
 
-      {/* Error */}
-      {estado === 'error' && errorMsg ? (
+      {/* Error message */}
+      {state === 'error' && errorMsg ? (
         <p role="alert" className="mt-2 text-xs text-[#C23B22]">
           {errorMsg}
         </p>
       ) : null}
 
-      {/* Botón confirmar */}
+      {/* Confirm button */}
       <button
         type="button"
-        disabled={estado === 'loading' || estado === 'ok'}
-        onClick={confirmar}
+        disabled={state === 'loading' || state === 'ok'}
+        onClick={confirm}
         className={`mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-[0.97] ${
-          estado === 'ok'
+          state === 'ok'
             ? 'bg-[#4A9B4A]'
             : 'bg-[#2D7A2D] hover:bg-[#236023] disabled:opacity-60'
         }`}
       >
-        {estado === 'loading' ? (
+        {state === 'loading' ? (
           <>
             <Loader2 size={16} className="animate-spin" aria-hidden />
             Enviando…
           </>
-        ) : estado === 'ok' ? (
+        ) : state === 'ok' ? (
           <>✓ Pedido enviado</>
         ) : (
           <>
             <ShoppingBag size={16} aria-hidden />
-            Pedir {cantidad} bulto{cantidad !== 1 ? 's' : ''} · {formatCOP(subtotal)}
+            Pedir {quantity} bulto{quantity !== 1 ? 's' : ''} · {formatCOP(subtotal)}
           </>
         )}
       </button>

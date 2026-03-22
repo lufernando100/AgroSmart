@@ -1,6 +1,6 @@
 -- ============================================================
 -- SEED DATA — GranoVivo (English schema)
--- Run AFTER database/01_modelo_datos.sql
+-- Run AFTER database/01_data_model.sql
 -- Replace with real warehouse prices for pilot municipalities.
 -- UI copy remains Spanish in the app; data identifiers are English.
 -- ============================================================

@@ -165,7 +165,7 @@ export async function getOrderForUser(
 export async function updateOrderByWarehouse(params: {
   orderId: string
   warehouseUserId: string
-  action: 'confirmar' | 'rechazar' | 'entregar'
+  action: 'confirm' | 'reject' | 'deliver'
   confirmedPrice?: number
   warehouseNotes?: string
 }) {
@@ -193,7 +193,7 @@ export async function updateOrderByWarehouse(params: {
   const status = order.status as OrderStatus
   const subtotal = Number(order.subtotal)
 
-  if (params.action === 'confirmar') {
+  if (params.action === 'confirm') {
     if (status !== 'pending') throw new Error('Solo se pueden confirmar pedidos pendientes.')
     const pct = Number(wh.commission_percentage ?? 0)
     const priceConf =
@@ -215,7 +215,7 @@ export async function updateOrderByWarehouse(params: {
     return { status: 'confirmed' as const }
   }
 
-  if (params.action === 'rechazar') {
+  if (params.action === 'reject') {
     if (status !== 'pending') throw new Error('Solo se pueden rechazar pedidos pendientes.')
     const { error: e2 } = await supabase
       .from('orders')
@@ -229,7 +229,7 @@ export async function updateOrderByWarehouse(params: {
     return { status: 'rejected' as const }
   }
 
-  if (params.action === 'entregar') {
+  if (params.action === 'deliver') {
     if (status !== 'confirmed') {
       throw new Error('Solo se pueden entregar pedidos confirmados.')
     }
@@ -245,7 +245,7 @@ export async function updateOrderByWarehouse(params: {
     return { status: 'delivered' as const }
   }
 
-  throw new Error('Acción no válida.')
+  throw new Error('Invalid action.')
 }
 
 export async function cancelOrderByFarmer(params: {

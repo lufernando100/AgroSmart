@@ -28,7 +28,7 @@ vi.mock('@/lib/catalogo/queries', () => ({
 }))
 
 vi.mock('@/lib/whatsapp/send', () => ({
-  enviarMensajeWhatsApp: vi.fn().mockResolvedValue({ ok: true }),
+  sendWhatsAppMessage: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
 import { ejecutarTool } from './execute-tools'

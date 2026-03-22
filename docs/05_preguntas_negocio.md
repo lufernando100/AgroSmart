@@ -18,7 +18,7 @@ Documento vivo: ir tachando o moviendo a “cerrado” cuando haya decisión o d
 
 - ¿Quién **actualiza precios** en la práctica (almacén por panel, por WhatsApp/foto, ambos)?
 - Frecuencia esperada de actualización y si hay **vigencia** de la cotización (horas/días).
-- ¿Los precios semilla en `05_datos_semilla.sql` deben **reemplazarse** por listas reales antes de salir a usuarios? ¿Quién las entrega y en qué formato?
+- ¿Los precios semilla en `05_seed_data.sql` deben **reemplazarse** por listas reales antes de salir a usuarios? ¿Quién las entrega y en qué formato?
 - ¿El **stock** es obligatorio en la app o puede quedar “disponible sí/no” sin cantidad?
 - Unidades de venta: ¿siempre coherente con `unidad_medida` del producto o hay excepciones (ej. medio bulto)?
 - ¿Hay productos **prohibidos** o **restringidos** (agroquímicos, dosis, edad del cultivo) que el asistente no deba ofrecer sin validación humana?

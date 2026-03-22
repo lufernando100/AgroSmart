@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { findUserByPhoneDigits } from '@/lib/users/lookup'
-import { enviarMensajeWhatsApp } from '@/lib/whatsapp/send'
+import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import { intentarProcesarSiNoAlmacen } from '@/lib/whatsapp/almacenRespuesta'
 import { obtenerUrlMediaWhatsApp } from '@/lib/whatsapp/media'
 import { transcribirAudioWhatsapp } from '@/lib/ai/transcribe-audio'
@@ -27,75 +27,79 @@ export async function processIncomingWebhook(body: unknown) {
     if (typeof from !== 'string') return
 
     const msgId = typeof msg.id === 'string' ? msg.id : undefined
-    const tipo = typeof msg.type === 'string' ? msg.type : 'text'
+    const msgType = typeof msg.type === 'string' ? msg.type : 'text'
 
-    if (tipo === 'text') {
+    if (msgType === 'text') {
       const tb = isRecord(msg.text) ? msg.text.body : undefined
-      const texto = typeof tb === 'string' ? tb : ''
-      if (await intentarProcesarSiNoAlmacen(from, texto)) return
-      if (!texto.trim()) return
-      await flujoCaficultor(from, texto, msgId)
+      const text = typeof tb === 'string' ? tb : ''
+      // Check if this is a warehouse YES/NO reply before routing to farmer flow
+      if (await intentarProcesarSiNoAlmacen(from, text)) return
+      if (!text.trim()) return
+      await farmerFlow(from, text, msgId)
       return
     }
 
-    if (tipo === 'audio') {
+    if (msgType === 'audio') {
       const audio = isRecord(msg.audio) ? msg.audio : null
-      const mid = audio && typeof audio.id === 'string' ? audio.id : null
-      if (!mid) return
-      const url = await obtenerUrlMediaWhatsApp(mid)
+      const mediaId = audio && typeof audio.id === 'string' ? audio.id : null
+      if (!mediaId) return
+      const url = await obtenerUrlMediaWhatsApp(mediaId)
       if (!url) return
-      const texto = await transcribirAudioWhatsapp(url)
-      if (!texto?.trim()) {
-        await enviarMensajeWhatsApp(
+      const text = await transcribirAudioWhatsapp(url)
+      if (!text?.trim()) {
+        await sendWhatsAppMessage(
           from,
           'No pude entender el audio. ¿Puedes escribirlo?'
         )
         return
       }
-      await flujoCaficultor(from, texto, msgId)
+      await farmerFlow(from, text, msgId)
     }
   } catch (e) {
     console.error('processIncomingWebhook', e)
   }
 }
 
-async function flujoCaficultor(
-  telefonoFrom: string,
-  texto: string,
+async function farmerFlow(
+  fromPhone: string,
+  text: string,
   whatsappMessageId?: string
 ) {
-  const digits = telefonoFrom.replace(/\D/g, '')
-  const usuario = await findUserByPhoneDigits(digits)
-  if (!usuario) {
-    await enviarMensajeWhatsApp(
-      telefonoFrom,
+  const digits = fromPhone.replace(/\D/g, '')
+  const user = await findUserByPhoneDigits(digits)
+  if (!user) {
+    await sendWhatsAppMessage(
+      fromPhone,
       'GranoVivo: no encontramos tu número registrado. Entra en la app e inicia sesión con tu celular para vincular tu cuenta.'
     )
     return
   }
 
   const admin = createAdminClient()
+
+  // Record the incoming message in conversation history
   await admin.from('conversations').insert({
-    user_id: usuario.id,
+    user_id: user.id,
     channel: 'whatsapp',
     whatsapp_message_id: whatsappMessageId ?? null,
     role: 'user',
-    content: texto,
+    content: text,
     content_type: 'text',
   })
 
-  const respuesta = await runClaudeParaWhatsApp({
-    farmerId: usuario.id,
-    textoUsuario: texto,
+  const response = await runClaudeParaWhatsApp({
+    farmerId: user.id,
+    textoUsuario: text,
   })
 
-  await enviarMensajeWhatsApp(telefonoFrom, respuesta)
+  await sendWhatsAppMessage(fromPhone, response)
 
+  // Record the assistant reply in conversation history
   await admin.from('conversations').insert({
-    user_id: usuario.id,
+    user_id: user.id,
     channel: 'whatsapp',
     role: 'assistant',
-    content: respuesta,
+    content: response,
     content_type: 'text',
   })
 }

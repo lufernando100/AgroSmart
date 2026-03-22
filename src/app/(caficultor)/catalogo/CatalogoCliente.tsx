@@ -10,10 +10,11 @@ import { QuickAdd } from '@/components/catalogo/QuickAdd'
 import type { ProductSummary } from '@/lib/catalogo/queries'
 
 type Props = {
-  categorias: { id: string; name: string; sort_order: number }[]
-  productos: ProductSummary[]
-  categoriaIdActiva: string | null
-  preciosPorProducto?: Record<
+  categories: { id: string; name: string; sort_order: number }[]
+  products: ProductSummary[]
+  activeCategoryId: string | null
+  /** Best price per product keyed by product id (used for QuickAdd) */
+  bestPricesByProduct?: Record<
     string,
     { warehouse_id: string; warehouse_name: string; price: number }
   >
@@ -64,30 +65,30 @@ function FotoProducto({
 }
 
 export function CatalogoCliente({
-  categorias,
-  productos,
-  categoriaIdActiva,
-  preciosPorProducto = {},
+  categories,
+  products,
+  activeCategoryId,
+  bestPricesByProduct = {},
 }: Props) {
-  const [busqueda, setBusqueda] = useState('')
-  const [catActiva, setCatActiva] = useState<string | null>(categoriaIdActiva)
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState<string | null>(activeCategoryId)
 
-  const productosFiltrados = useMemo(() => {
-    let lista = productos
-    if (catActiva) {
-      lista = lista.filter((p) => p.category_id === catActiva)
+  const filteredProducts = useMemo(() => {
+    let list = products
+    if (activeCategory) {
+      list = list.filter((p) => p.category_id === activeCategory)
     }
-    if (busqueda.trim()) {
-      const q = busqueda.trim().toLowerCase()
-      lista = lista.filter(
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      list = list.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
           (p.short_name ?? '').toLowerCase().includes(q) ||
           (p.presentation ?? '').toLowerCase().includes(q)
       )
     }
-    return lista
-  }, [productos, catActiva, busqueda])
+    return list
+  }, [products, activeCategory, search])
 
   return (
     <>
@@ -101,8 +102,8 @@ export function CatalogoCliente({
           type="search"
           inputMode="search"
           placeholder="Buscar fertilizante, herbicida…"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           aria-label="Buscar productos"
           className="w-full rounded-2xl border border-[#E8E4DD] bg-white py-3 pl-10 pr-4 text-base text-[#252320] shadow-[0_1px_3px_rgba(18,17,16,0.06)] placeholder-[#A39E94] outline-none focus:border-[#2D7A2D] focus:ring-2 focus:ring-[#2D7A2D]/15 transition-shadow"
         />
@@ -111,24 +112,24 @@ export function CatalogoCliente({
       <div className="mb-5 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
         <button
           type="button"
-          onClick={() => setCatActiva(null)}
-          aria-pressed={!catActiva}
+          onClick={() => setActiveCategory(null)}
+          aria-pressed={!activeCategory}
           className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
-            !catActiva
+            !activeCategory
               ? 'bg-[#2D7A2D] text-white shadow-md shadow-[#2D7A2D]/25'
               : 'bg-white text-[#524E46] border border-[#E8E4DD] hover:border-[#2D7A2D]/40'
           }`}
         >
           Todos
         </button>
-        {categorias.map((c) => (
+        {categories.map((c) => (
           <button
             key={c.id}
             type="button"
-            onClick={() => setCatActiva(catActiva === c.id ? null : c.id)}
-            aria-pressed={catActiva === c.id}
+            onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
+            aria-pressed={activeCategory === c.id}
             className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
-              catActiva === c.id
+              activeCategory === c.id
                 ? 'bg-[#2D7A2D] text-white shadow-md shadow-[#2D7A2D]/25'
                 : 'bg-white text-[#524E46] border border-[#E8E4DD] hover:border-[#2D7A2D]/40'
             }`}
@@ -138,21 +139,21 @@ export function CatalogoCliente({
         ))}
       </div>
 
-      {productosFiltrados.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <MensajeVacio
-          Icono={Search}
-          titulo={busqueda ? `Sin resultados para "${busqueda}"` : 'Sin productos en esta categoría'}
-          descripcion="Intenta con otro nombre o revisa el catálogo completo."
-          accion={{
+          Icon={Search}
+          title={search ? `Sin resultados para "${search}"` : 'Sin productos en esta categoría'}
+          description="Intenta con otro nombre o revisa el catálogo completo."
+          action={{
             label: 'Ver todo el catálogo',
-            onClick: () => { setBusqueda(''); setCatActiva(null) },
+            onClick: () => { setSearch(''); setActiveCategory(null) },
           }}
           className="pb-4"
         />
       ) : (
         <ul className="flex flex-col gap-3 pb-4">
-          {productosFiltrados.map((p, i) => {
-            const mejorPrecio = preciosPorProducto[p.id]
+          {filteredProducts.map((p, i) => {
+            const bestPrice = bestPricesByProduct[p.id]
             return (
               <li key={p.id}>
                 <div className="group relative overflow-hidden rounded-2xl border border-[#E8E4DD] bg-white shadow-[0_1px_3px_rgba(18,17,16,0.06)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(18,17,16,0.10)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_1px_3px_rgba(18,17,16,0.06)]">
@@ -194,13 +195,13 @@ export function CatalogoCliente({
                     />
                   </Link>
 
-                  {mejorPrecio ? (
+                  {bestPrice ? (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <QuickAdd
                         productId={p.id}
-                        warehouseId={mejorPrecio.warehouse_id}
-                        warehouseName={mejorPrecio.warehouse_name}
-                        unitPrice={mejorPrecio.price}
+                        warehouseId={bestPrice.warehouse_id}
+                        warehouseName={bestPrice.warehouse_name}
+                        unitPrice={bestPrice.price}
                         productName={p.name}
                       />
                     </div>

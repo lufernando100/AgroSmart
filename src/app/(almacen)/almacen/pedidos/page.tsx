@@ -8,21 +8,18 @@ export default async function AlmacenPedidosPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
   const pedidos = await listWarehouseOrders(user.id)
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Pedidos</h1>
-      <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        Confirma o rechaza pendientes. Al confirmar o rechazar se notifica al caficultor por
-        WhatsApp si tiene teléfono en el perfil.
+    <div className="px-6 py-6">
+      <h1 className="text-2xl font-bold text-[#252320]">Pedidos</h1>
+      <p className="mt-1 text-sm text-[#736E64]">
+        Confirma o rechaza pendientes — se notifica al caficultor automáticamente por WhatsApp.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <PedidosTabs pedidos={pedidos} />
       </div>
     </div>
