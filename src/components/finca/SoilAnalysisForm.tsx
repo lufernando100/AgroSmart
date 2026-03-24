@@ -103,43 +103,43 @@ export function SoilAnalysisForm() {
     <section className="space-y-4">
       <form
         onSubmit={onSubmit}
-        className="rounded-2xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_3px_rgba(18,17,16,0.06)]"
+        className="rounded-2xl border border-[#EAE1D9] bg-white p-4 shadow-[0_1px_3px_rgba(18,17,16,0.06)]"
       >
-        <h2 className="text-lg font-semibold text-[#252320]">Análisis de suelo</h2>
-        <p className="mt-1 text-sm text-[#736E64]">
+        <h2 className="text-lg font-semibold text-[#1A0F0A]">Análisis de suelo</h2>
+        <p className="mt-1 text-sm text-[#7B675B]">
           Ingresa los valores del laboratorio para obtener la recomendación.
         </p>
 
         <div className="mt-4 grid gap-3">
           <label className="grid gap-1">
-            <span className="text-sm font-medium text-[#3A3732]">ID de la finca</span>
+            <span className="text-sm font-medium text-[#3D2F28]">ID de la finca</span>
             <input
               value={farmId}
               onChange={(e) => setFarmId(e.target.value)}
               placeholder="UUID de la finca"
-              className="h-14 rounded-xl border border-[#D4CEC4] px-3 text-sm outline-none ring-[#A8D1A8] focus:ring-2"
+              className="h-14 rounded-xl border border-[#2D1B14] px-3 text-sm outline-none ring-[#A7F3D0] focus:ring-2"
             />
           </label>
           <label className="grid gap-1">
-            <span className="text-sm font-medium text-[#3A3732]">ID del lote (opcional)</span>
+            <span className="text-sm font-medium text-[#3D2F28]">ID del lote (opcional)</span>
             <input
               value={plotId}
               onChange={(e) => setPlotId(e.target.value)}
               placeholder="UUID del lote"
-              className="h-14 rounded-xl border border-[#D4CEC4] px-3 text-sm outline-none ring-[#A8D1A8] focus:ring-2"
+              className="h-14 rounded-xl border border-[#2D1B14] px-3 text-sm outline-none ring-[#A7F3D0] focus:ring-2"
             />
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
             {FIELDS.map((field) => (
               <label key={field.key} className="grid gap-1">
-                <span className="text-sm font-medium text-[#3A3732]">{field.label}</span>
+                <span className="text-sm font-medium text-[#3D2F28]">{field.label}</span>
                 <input
                   inputMode="decimal"
                   value={values[field.key] ?? ''}
                   onChange={(e) => handleChangeValue(field.key, e.target.value)}
                   placeholder="0"
-                  className="h-14 rounded-xl border border-[#D4CEC4] px-3 text-sm outline-none ring-[#A8D1A8] focus:ring-2"
+                  className="h-14 rounded-xl border border-[#2D1B14] px-3 text-sm outline-none ring-[#A7F3D0] focus:ring-2"
                 />
               </label>
             ))}
@@ -149,7 +149,7 @@ export function SoilAnalysisForm() {
         <button
           type="submit"
           disabled={!canSubmit || loading}
-          className="mt-4 h-14 w-full rounded-xl bg-[#2D7A2D] text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-4 h-14 w-full rounded-xl bg-[#059669] text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? 'Analizando...' : 'Interpretar análisis'}
         </button>
@@ -158,14 +158,14 @@ export function SoilAnalysisForm() {
       {error ? <MensajeError message={error} /> : null}
 
       {result ? (
-        <article className="rounded-2xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_3px_rgba(18,17,16,0.06)]">
-          <h3 className="text-base font-semibold text-[#252320]">Resultado</h3>
-          <p className="mt-1 text-sm text-[#736E64]">{result.recommendation_text}</p>
+        <article className="rounded-2xl border border-[#EAE1D9] bg-white p-4 shadow-[0_1px_3px_rgba(18,17,16,0.06)]">
+          <h3 className="text-base font-semibold text-[#1A0F0A]">Resultado</h3>
+          <p className="mt-1 text-sm text-[#7B675B]">{result.recommendation_text}</p>
 
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-[#736E64]">
+                <tr className="text-[#7B675B]">
                   <th className="py-2">Nutriente</th>
                   <th className="py-2">Valor</th>
                   <th className="py-2">Nivel</th>
@@ -173,7 +173,7 @@ export function SoilAnalysisForm() {
               </thead>
               <tbody>
                 {result.interpretation.map((row) => (
-                  <tr key={row.nutriente} className="border-t border-[#F0EDE7] text-[#3A3732]">
+                  <tr key={row.nutriente} className="border-t border-[#F0EDE7] text-[#3D2F28]">
                     <td className="py-2">{row.nutriente}</td>
                     <td className="py-2">{row.valor}</td>
                     <td className="py-2 capitalize">{row.nivel}</td>
@@ -183,7 +183,7 @@ export function SoilAnalysisForm() {
             </table>
           </div>
 
-          <p className="mt-3 text-sm text-[#3A3732]">
+          <p className="mt-3 text-sm text-[#3D2F28]">
             Ver precios de este fertilizante: <strong>{result.recommendation.suggestedProductSearch}</strong>
           </p>
         </article>

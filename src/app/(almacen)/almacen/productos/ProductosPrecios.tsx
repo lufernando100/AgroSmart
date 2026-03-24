@@ -84,16 +84,16 @@ export function ProductosPrecios({ initial }: { initial: WarehousePriceRow[] }) 
           {filas.map((r) => (
             <li
               key={r.price_id}
-              className="rounded-2xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_3px_rgba(18,17,16,0.06)]"
+              className="rounded-[2.5rem] border-2 border-[#1A0F0A]/10 bg-white p-6 shadow-xl transition-all"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {/* Info del producto */}
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[#252320]">{r.name}</p>
+                  <p className="font-semibold text-[#1A0F0A]">{r.name}</p>
                   {r.presentation ? (
-                    <p className="text-sm text-[#736E64]">{r.presentation}</p>
+                    <p className="text-sm text-[#7B675B]">{r.presentation}</p>
                   ) : null}
-                  <p className="text-xs text-[#A39E94]">{r.unit_of_measure}</p>
+                  <p className="text-xs text-[#9C8F85]">{r.unit_of_measure}</p>
                 </div>
 
                 {/* Controles */}
@@ -110,7 +110,7 @@ export function ProductosPrecios({ initial }: { initial: WarehousePriceRow[] }) 
                           if (e.key === 'Escape') setEditing(null)
                         }}
                         aria-label="Nuevo precio"
-                        className="w-36 rounded-xl border border-[#D4CEC4] px-3 py-2 text-base text-[#252320] outline-none focus:border-[#2D7A2D] focus:ring-2 focus:ring-[#2D7A2D]/15"
+                        className="h-12 w-32 rounded-2xl border-2 border-[#1A0F0A]/20 px-4 text-base text-[#1A0F0A] outline-none focus:border-[#059669] focus:ring-2 focus:ring-[#059669]/15"
                         placeholder="Precio COP"
                         autoFocus
                       />
@@ -119,22 +119,22 @@ export function ProductosPrecios({ initial }: { initial: WarehousePriceRow[] }) 
                         disabled={loadingId === r.price_id}
                         onClick={() => void guardarPrecio(r.price_id)}
                         aria-label="Guardar precio"
-                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2D7A2D] text-white disabled:opacity-50 active:scale-90"
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#059669] text-white disabled:opacity-50 active:scale-95"
                       >
-                        <Check size={18} aria-hidden />
+                        <Check size={24} aria-hidden />
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditing(null)}
                         aria-label="Cancelar edición"
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] active:scale-90"
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-[#1A0F0A]/10 bg-[#FDFBF7] text-[#5B473D] active:scale-95"
                       >
-                        <X size={18} aria-hidden />
+                        <X size={24} aria-hidden />
                       </button>
                     </>
                   ) : (
                     <>
-                      <span className="tabular-nums text-lg font-bold text-[#2D7A2D]">
+                      <span className="tabular-nums text-lg font-bold text-[#059669]">
                         {formatCOP(r.unit_price)}
                       </span>
                       <button
@@ -144,9 +144,9 @@ export function ProductosPrecios({ initial }: { initial: WarehousePriceRow[] }) 
                           setPrecioDraft(String(Math.round(r.unit_price)))
                         }}
                         aria-label={`Editar precio de ${r.name}`}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] hover:border-[#2D7A2D]/40 active:scale-90 transition-all"
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-[#1A0F0A]/10 bg-[#FDFBF7] text-[#5B473D] hover:border-[#059669]/40 active:scale-95 transition-all"
                       >
-                        <Pencil size={15} aria-hidden />
+                        <Pencil size={20} aria-hidden />
                       </button>
                     </>
                   )}
@@ -156,10 +156,10 @@ export function ProductosPrecios({ initial }: { initial: WarehousePriceRow[] }) 
                     type="button"
                     disabled={loadingId === r.price_id}
                     onClick={() => void toggleDisponible(r.price_id, r.is_available)}
-                    className={`rounded-xl px-3.5 py-2 text-sm font-semibold transition-all disabled:opacity-50 active:scale-95 ${
+                    className={`h-12 rounded-2xl px-5 text-sm font-semibold transition-all disabled:opacity-50 active:scale-95 ${
                       r.is_available
-                        ? 'bg-[#F0F7F0] text-[#2D7A2D] border border-[#A8D1A8]'
-                        : 'bg-[#FDF6EC] text-[#8B6914] border border-[#D4B87A]'
+                        ? 'bg-[#ECFDF5] text-[#059669] border-2 border-[#A7F3D0]'
+                        : 'bg-[#FDF6EC] text-[#D97706] border-2 border-[#D4B87A]'
                     }`}
                   >
                     {r.is_available ? 'Disponible' : 'Agotado'}

@@ -99,45 +99,45 @@ export function PedidoForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
       {/* Product info card */}
-      <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
+      <div className="rounded-xl border border-[#EAE1D9] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F5F3EF]">
-            <Package size={22} className="text-[#736E64]" strokeWidth={1.5} />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#FDFBF7]">
+            <Package size={22} className="text-[#7B675B]" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="font-semibold text-[#252320]">{productName}</p>
-            <p className="text-sm text-[#736E64]">
+            <p className="font-semibold text-[#1A0F0A]">{productName}</p>
+            <p className="text-sm text-[#7B675B]">
               {[presentation, unitOfMeasure].filter(Boolean).join(' · ')}
             </p>
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 border-t border-[#E8E4DD] pt-3 text-sm text-[#736E64]">
+        <div className="mt-3 flex items-center gap-2 border-t border-[#EAE1D9] pt-3 text-sm text-[#7B675B]">
           <Store size={14} aria-hidden />
           <span>{warehouseName}</span>
         </div>
 
-        <p className="mt-2 tabular-nums text-2xl font-bold text-[#2D7A2D]">
+        <p className="mt-2 tabular-nums text-2xl font-bold text-[#059669]">
           {formatCOP(unitPrice)}{' '}
-          <span className="text-sm font-normal text-[#736E64]">/ unidad</span>
+          <span className="text-sm font-normal text-[#7B675B]">/ unidad</span>
         </p>
       </div>
 
       {/* Quantity selector */}
-      <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
-        <p className="mb-3 text-sm font-semibold text-[#3A3732]">Cantidad</p>
+      <div className="rounded-xl border border-[#EAE1D9] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
+        <p className="mb-3 text-sm font-semibold text-[#3D2F28]">Cantidad</p>
         <div className="flex items-center gap-4">
           <button
             type="button"
             aria-label="Restar uno"
             disabled={quantity <= QTY_MIN}
             onClick={() => changeQuantity(-1)}
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#EAE1D9] bg-[#FDFBF7] text-[#5B473D] disabled:opacity-40"
           >
             <Minus size={20} aria-hidden />
           </button>
           <span
-            className="tabular-nums min-w-[3ch] text-center text-2xl font-bold text-[#252320]"
+            className="tabular-nums min-w-[3ch] text-center text-2xl font-bold text-[#1A0F0A]"
             aria-live="polite"
             aria-label={`${quantity} bultos`}
           >
@@ -148,24 +148,24 @@ export function PedidoForm({
             aria-label="Sumar uno"
             disabled={quantity >= QTY_MAX}
             onClick={() => changeQuantity(1)}
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#EAE1D9] bg-[#FDFBF7] text-[#5B473D] disabled:opacity-40"
           >
             <Plus size={20} aria-hidden />
           </button>
-          <span className="text-sm text-[#736E64]">bultos</span>
+          <span className="text-sm text-[#7B675B]">bultos</span>
         </div>
       </div>
 
       {/* Notes for the warehouse */}
       <div>
         <div className="mb-1.5 flex items-center justify-between">
-          <label htmlFor="notes" className="text-sm font-semibold text-[#3A3732]">
+          <label htmlFor="notes" className="text-sm font-semibold text-[#3D2F28]">
             Notas para el almacén{' '}
-            <span className="font-normal text-[#A39E94]">(opcional)</span>
+            <span className="font-normal text-[#9C8F85]">(opcional)</span>
           </label>
           <span
             className={`text-xs tabular-nums ${
-              notesExceeded ? 'text-[#C23B22]' : 'text-[#A39E94]'
+              notesExceeded ? 'text-[#C23B22]' : 'text-[#9C8F85]'
             }`}
             aria-live="polite"
           >
@@ -179,10 +179,10 @@ export function PedidoForm({
           maxLength={NOTES_MAX + 10} /* server rejects >500, client warns before that */
           onChange={(ev) => setNotes(ev.target.value)}
           aria-describedby={notesExceeded ? 'notes-error' : undefined}
-          className={`w-full rounded-xl border px-4 py-3 text-base text-[#252320] placeholder-[#A39E94] outline-none focus:ring-2 ${
+          className={`w-full rounded-xl border px-4 py-3 text-base text-[#1A0F0A] placeholder-[#9C8F85] outline-none focus:ring-2 ${
             notesExceeded
               ? 'border-[#C23B22] focus:border-[#C23B22] focus:ring-[#C23B22]/20'
-              : 'border-[#D4CEC4] focus:border-[#2D7A2D] focus:ring-[#2D7A2D]/20'
+              : 'border-[#2D1B14] focus:border-[#059669] focus:ring-[#059669]/20'
           } bg-white`}
           placeholder="Ej.: entregar en la vereda el martes"
         />
@@ -194,16 +194,16 @@ export function PedidoForm({
       </div>
 
       {/* Order total summary */}
-      <div className="rounded-xl border border-[#A8D1A8] bg-[#F0F7F0] p-4">
+      <div className="rounded-xl border border-[#A7F3D0] bg-[#ECFDF5] p-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-[#236023]">
+          <span className="text-sm font-medium text-[#047857]">
             {quantity} × {formatCOP(unitPrice)}
           </span>
-          <span className="tabular-nums text-xl font-bold text-[#2D7A2D]">
+          <span className="tabular-nums text-xl font-bold text-[#059669]">
             {formatCOP(subtotal)}
           </span>
         </div>
-        <p className="mt-1 text-xs text-[#4A9B4A]">
+        <p className="mt-1 text-xs text-[#10B981]">
           Precio final confirmado por el almacén
         </p>
       </div>
@@ -224,7 +224,7 @@ export function PedidoForm({
         <button
           type="submit"
           disabled={loading || notesExceeded}
-          className="h-14 rounded-xl bg-[#2D7A2D] text-base font-semibold text-white hover:bg-[#236023] disabled:opacity-60"
+          className="h-14 rounded-xl bg-[#059669] text-base font-semibold text-white hover:bg-[#047857] disabled:opacity-60"
         >
           {loading
             ? 'Enviando pedido…'
@@ -232,7 +232,7 @@ export function PedidoForm({
         </button>
         <Link
           href={`/catalogo/${productId}`}
-          className="flex h-12 items-center justify-center rounded-xl border border-[#D4CEC4] text-base font-medium text-[#524E46]"
+          className="flex h-12 items-center justify-center rounded-xl border border-[#2D1B14] text-base font-medium text-[#5B473D]"
         >
           Cancelar
         </Link>

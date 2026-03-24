@@ -38,8 +38,8 @@ export function SidebarCartLink() {
       aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
         active
-          ? 'bg-[#F0F7F0] text-[#2D7A2D]'
-          : 'text-[#524E46] hover:bg-[#F5F3EF] hover:text-[#252320]'
+          ? 'bg-[#ECFDF5] text-[#059669]'
+          : 'text-[#5B473D] hover:bg-[#FDFBF7] hover:text-[#1A0F0A]'
       }`}
     >
       <span className="relative inline-flex">
@@ -70,12 +70,12 @@ export function FloatingCartButton() {
   return (
     <Link
       href="/carrito"
-      className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#2D7A2D] text-white shadow-lg shadow-[#2D7A2D]/30 md:hidden"
+      className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#059669] text-white shadow-lg shadow-[#059669]/30 md:hidden"
       aria-label={`Carrito, ${n} productos`}
     >
       <span className="relative">
         <ShoppingCart size={24} strokeWidth={2} aria-hidden />
-        <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-[#2D7A2D]">
+        <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-[#059669]">
           {n > 99 ? '99+' : n}
         </span>
       </span>

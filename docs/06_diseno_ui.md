@@ -103,13 +103,13 @@ Paleta tierra/cafe que conecta con el campo colombiano. Inspirada en el cafe, la
 
 ```css
 /* Fuente principal — usar una sola familia para toda la app */
-/* Recomendada: Plus Jakarta Sans (Google Fonts, gratis, moderna, legible) */
+/* Recomendada: Inter (Google Fonts, gratis, moderna, legible) */
 /* Alternativa: DM Sans o Outfit */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Escala de tamanos — grande para accesibilidad rural */
   --text-xs:   14px;   /* Etiquetas minimas, timestamps */

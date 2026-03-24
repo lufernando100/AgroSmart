@@ -38,11 +38,11 @@ type Props = {
 }
 
 const labels: Record<OrderStatus, { texto: string; color: string; bg: string }> = {
-  pending: { texto: 'Pendiente de confirmación', color: '#8B6914', bg: '#FAF6F1' },
-  confirmed: { texto: 'Confirmado por el almacén', color: '#2D7A2D', bg: '#F0F7F0' },
+  pending: { texto: 'Pendiente de confirmación', color: '#D97706', bg: '#FAF6F1' },
+  confirmed: { texto: 'Confirmado por el almacén', color: '#059669', bg: '#ECFDF5' },
   rejected: { texto: 'Rechazado por el almacén', color: '#C23B22', bg: '#FDF2F0' },
-  delivered: { texto: 'Entregado', color: '#2D7A2D', bg: '#F0F7F0' },
-  cancelled: { texto: 'Cancelado', color: '#736E64', bg: '#F5F3EF' },
+  delivered: { texto: 'Entregado', color: '#059669', bg: '#ECFDF5' },
+  cancelled: { texto: 'Cancelado', color: '#7B675B', bg: '#FDFBF7' },
 }
 
 export function PedidoEstadoRealtime({ orderId, initial }: Props) {
@@ -83,7 +83,7 @@ export function PedidoEstadoRealtime({ orderId, initial }: Props) {
     }
   }, [orderId])
 
-  const info = labels[status] ?? { texto: status, color: '#736E64', bg: '#F5F3EF' }
+  const info = labels[status] ?? { texto: status, color: '#7B675B', bg: '#FDFBF7' }
 
   const showWhatsappFallback =
     (status === 'confirmed' || status === 'rejected') &&
@@ -102,7 +102,7 @@ export function PedidoEstadoRealtime({ orderId, initial }: Props) {
       className="mt-4 rounded-xl border p-4"
       style={{ borderColor: info.color + '33', backgroundColor: info.bg }}
     >
-      <p className="text-xs font-medium text-[#736E64]">Estado del pedido</p>
+      <p className="text-xs font-medium text-[#7B675B]">Estado del pedido</p>
       <p
         className="mt-0.5 text-base font-semibold"
         style={{ color: info.color }}
@@ -110,13 +110,13 @@ export function PedidoEstadoRealtime({ orderId, initial }: Props) {
         {info.texto}
       </p>
       {status === 'pending' ? (
-        <p className="mt-3 text-xs leading-relaxed text-[#736E64]" role="status">
+        <p className="mt-3 text-xs leading-relaxed text-[#7B675B]" role="status">
           Cuando el almacén responda, este cuadro se actualiza solo. Si no te llega WhatsApp, podés
           volver aquí o al catálogo para ver el resultado.
         </p>
       ) : null}
       {(status === 'confirmed' || status === 'rejected') && !showWhatsappFallback ? (
-        <p className="mt-3 text-xs leading-relaxed text-[#736E64]" role="status">
+        <p className="mt-3 text-xs leading-relaxed text-[#7B675B]" role="status">
           {whatsappNotify?.status === 'sent'
             ? 'Si no ves el mensaje en WhatsApp, este estado en la app es la referencia oficial.'
             : 'Este estado en la app es la referencia oficial de tu pedido.'}
@@ -130,8 +130,8 @@ export function PedidoEstadoRealtime({ orderId, initial }: Props) {
           {whatsappFallbackText}
         </div>
       ) : null}
-      <div className="mt-3 flex items-center justify-between border-t border-[#E8E4DD] pt-3">
-        <span className="text-sm text-[#736E64]">Total</span>
+      <div className="mt-3 flex items-center justify-between border-t border-[#EAE1D9] pt-3">
+        <span className="text-sm text-[#7B675B]">Total</span>
         <span
           className="tabular-nums text-lg font-bold"
           style={{ color: info.color }}

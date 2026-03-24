@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './globals.css'
 
-const plusJakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-plus-jakarta',
+  variable: '--font-inter',
   display: 'swap',
 })
 
@@ -25,14 +24,14 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#2D7A2D',
+  themeColor: '#059669',
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${plusJakarta.variable} h-full`}>
+    <html lang="es" className={`${inter.variable} h-full`}>
       <head>
         <script
           dangerouslySetInnerHTML={{

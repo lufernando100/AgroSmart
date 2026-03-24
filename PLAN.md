@@ -617,7 +617,7 @@ Las 11 tools definidas en `docs/02_system_prompt_tools.ts`. Estado en `src/lib/a
 > Archivos de referencia: `docs/06_diseno_ui.md`, `docs/04_wireframes.md`
 
 ### Implementados
-- ✅ Fuente Plus Jakarta Sans vía `next/font/google` en `src/app/layout.tsx`
+- ✅ Fuente Inter vía `next/font/google` en `src/app/layout.tsx`
 - ✅ Paleta de colores tierra/café en `src/app/globals.css` (`@theme` con tokens `--color-primary-500` etc.)
 - ✅ Fondos `#FAFAF8` (beige cálido) en layout y tarjetas
 - ✅ Cards con `rounded-2xl`, sombras cálidas `shadow-[0_1px_3px_rgba(18,17,16,0.06)]` y borde `#E8E4DD`
@@ -708,7 +708,7 @@ _Ninguno por ahora._
 | 2026-03-21 | Fase 1.3–1.6: flujo PWA pedido/confirmación + Realtime (`09_realtime_orders.sql`), panel almacén (dashboard, pedidos, productos), API `PATCH /api/almacen/precios/[id]`, WhatsApp envío + webhook asíncrono + SI/NO almacén. |
 | 2026-03-21 | Revisión Fase 1: build OK, 0 errores TypeScript. Agregados docs de diseño UI (`06_diseno_ui.md`, `PROMPT_COMPLETO.md`). Infraestructura de testing con Vitest + RTL: 81 tests cubriendo utils, lógica de negocio y componentes React. |
 | 2026-03-22 | Bug crítico: cookies de sesión perdían opciones (httpOnly, maxAge) al propagarse en `/api/auth/otp`. Fix: buffer `pendingCookies` captura opciones completas de `setAll`. |
-| 2026-03-22 | Diseño aplicado: paleta tierra/café, Plus Jakarta Sans, layout responsive con sidebar desktop (md+) + tab bar mobile. Se descartó vista de teléfono centrada. |
+| 2026-03-22 | Diseño aplicado: paleta tierra/café, Inter, layout responsive con sidebar desktop (md+) + tab bar mobile. Se descartó vista de teléfono centrada. |
 | 2026-03-22 | Errores amigables: `friendlyDbError()` en `db-errors.ts`, validación FK antes de INSERT en `pedidos`, `<MensajeError>` y `<MensajeVacio>` como componentes reutilizables. |
 | 2026-03-22 | Validaciones: `notas` maxLength=500, `cantidad` min=1 max=9999 en cliente y servidor (`/api/pedidos`). |
 | 2026-03-22 | Fotos de producto: `extractFotoUrl(metadata)` en queries, `<FotoProducto>` con placeholder en `CatalogoCliente`. |

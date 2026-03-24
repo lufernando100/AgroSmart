@@ -27,11 +27,11 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 }
 
 const STATUS_COLOR: Record<OrderStatus, string> = {
-  pending: 'bg-[#FDF6EC] text-[#8B6914]',
-  confirmed: 'bg-[#F0F7F0] text-[#2D7A2D]',
-  delivered: 'bg-[#F5F3EF] text-[#524E46]',
+  pending: 'bg-[#FDF6EC] text-[#D97706]',
+  confirmed: 'bg-[#ECFDF5] text-[#059669]',
+  delivered: 'bg-[#FDFBF7] text-[#5B473D]',
   rejected: 'bg-[#FEF2F2] text-[#C23B22]',
-  cancelled: 'bg-[#F5F3EF] text-[#A39E94]',
+  cancelled: 'bg-[#FDFBF7] text-[#9C8F85]',
 }
 
 export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
@@ -72,7 +72,7 @@ export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
   return (
     <div>
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-[#E8E4DD] pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-[#EAE1D9] pb-3">
         {TABS.map((t) => {
           const count = t.key === 'todos' ? pedidos.length : pedidos.filter((p) => p.status === t.key).length
           return (
@@ -83,15 +83,15 @@ export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
               aria-pressed={tab === t.key}
               className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-all active:scale-95 ${
                 tab === t.key
-                  ? 'bg-[#2D7A2D] text-white shadow-sm'
-                  : 'bg-white border border-[#E8E4DD] text-[#524E46] hover:border-[#2D7A2D]/40'
+                  ? 'bg-[#059669] text-white shadow-sm'
+                  : 'bg-white border border-[#EAE1D9] text-[#5B473D] hover:border-[#059669]/40'
               }`}
             >
               {t.label}
               {count > 0 && (
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
-                    tab === t.key ? 'bg-white/25 text-white' : 'bg-[#F5F3EF] text-[#736E64]'
+                    tab === t.key ? 'bg-white/25 text-white' : 'bg-[#FDFBF7] text-[#7B675B]'
                   }`}
                 >
                   {count}
@@ -120,24 +120,24 @@ export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
         {filtrados.map((p) => (
           <li
             key={p.id}
-            className="rounded-2xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_3px_rgba(18,17,16,0.06)]"
+            className="rounded-[2.5rem] border-2 border-[#1A0F0A]/10 bg-white p-6 shadow-xl transition-all"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-mono font-bold text-[#252320]">{p.order_number}</p>
+                  <p className="font-mono font-bold text-[#1A0F0A]">{p.order_number}</p>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[p.status]}`}>
                     {STATUS_LABEL[p.status]}
                   </span>
                 </div>
-                <p className="mt-1 text-sm font-medium text-[#3A3732]">
+                <p className="mt-1 text-sm font-medium text-[#3D2F28]">
                   {p.users?.name ?? 'Caficultor'}
                   {p.users?.phone ? (
-                    <span className="ml-1 font-normal text-[#736E64]">· {p.users.phone}</span>
+                    <span className="ml-1 font-normal text-[#7B675B]">· {p.users.phone}</span>
                   ) : null}
                 </p>
-                <p className="text-xs text-[#A39E94]">{formatFecha(p.created_at)}</p>
-                <p className="mt-2 tabular-nums text-lg font-bold text-[#2D7A2D]">
+                <p className="text-xs text-[#9C8F85]">{formatFecha(p.created_at)}</p>
+                <p className="mt-2 tabular-nums text-lg font-bold text-[#059669]">
                   {formatCOP(Number(p.total))}
                 </p>
               </div>
@@ -149,7 +149,7 @@ export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
                       type="button"
                       disabled={actionId === p.id}
                       onClick={() => void patch(p.id, 'confirm')}
-                      className="h-10 rounded-xl bg-[#2D7A2D] px-4 text-sm font-semibold text-white hover:bg-[#236023] disabled:opacity-50 active:scale-[0.97] transition-all"
+                      className="h-14 rounded-2xl bg-[#059669] px-6 text-sm font-semibold text-white hover:bg-[#047857] disabled:opacity-50 active:scale-95 transition-all"
                     >
                       {actionId === p.id ? 'Confirmando…' : 'Confirmar'}
                     </button>
@@ -162,7 +162,7 @@ export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
                         if (!motivo.trim()) { setError('Escribe un motivo para el rechazo.'); return }
                         void patch(p.id, 'reject', { warehouse_notes: motivo.trim() })
                       }}
-                      className="h-10 rounded-xl border border-[#C23B22]/40 px-4 text-sm font-semibold text-[#C23B22] hover:bg-[#FEF2F2] disabled:opacity-50 active:scale-[0.97] transition-all"
+                      className="h-14 rounded-2xl border-2 border-[#C23B22]/40 bg-transparent px-6 text-sm font-semibold text-[#C23B22] hover:bg-[#FEF2F2] disabled:opacity-50 active:scale-95 transition-all"
                     >
                       Rechazar
                     </button>
@@ -173,7 +173,7 @@ export function PedidosTabs({ pedidos }: { pedidos: WarehouseOrderRow[] }) {
                     type="button"
                     disabled={actionId === p.id}
                     onClick={() => void patch(p.id, 'deliver')}
-                    className="h-10 rounded-xl border border-[#D4CEC4] bg-[#F5F3EF] px-4 text-sm font-semibold text-[#3A3732] hover:bg-[#E8E4DD] disabled:opacity-50 active:scale-[0.97] transition-all"
+                    className="h-14 rounded-2xl border-2 border-[#1A0F0A]/10 bg-transparent px-6 text-sm font-semibold text-[#3D2F28] hover:bg-[#EAE1D9] disabled:opacity-50 active:scale-95 transition-all"
                   >
                     {actionId === p.id ? 'Guardando…' : 'Marcar entregado'}
                   </button>

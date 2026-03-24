@@ -62,7 +62,7 @@ supabase gen types typescript --local > src/types/supabase.ts  # Regenerar tipos
 - Panel del almacén (dashboard, pedidos, productos/precios)
 - Webhook de WhatsApp con Claude + tools (buscar_productos, crear_pedido, notificar_almacen)
 - Notificaciones WhatsApp bidireccionales (almacén responde SI/NO)
-- Diseño tierra/café, Plus Jakarta Sans, sidebar desktop + tab bar mobile
+- Diseño tierra/café, Inter, sidebar desktop + tab bar mobile
 - 109 tests automatizados (Vitest + React Testing Library), 12 archivos
 
 **Fase 2 — Inteligencia agronómica: EN CURSO**

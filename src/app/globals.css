@@ -5,16 +5,16 @@
 
 @theme {
   /* Verde cafetal — primario */
-  --color-primary-50:  #F0F7F0;
-  --color-primary-100: #D4E8D4;
-  --color-primary-200: #A8D1A8;
-  --color-primary-300: #6DB56D;
-  --color-primary-400: #4A9B4A;
-  --color-primary-500: #2D7A2D;
-  --color-primary-600: #236023;
-  --color-primary-700: #1A481A;
-  --color-primary-800: #123012;
-  --color-primary-900: #0A1A0A;
+  --color-primary-50:  #ECFDF5;
+  --color-primary-100: #D1FAE5;
+  --color-primary-200: #A7F3D0;
+  --color-primary-300: #34D399;
+  --color-primary-400: #10B981;
+  --color-primary-500: #059669;
+  --color-primary-600: #047857;
+  --color-primary-700: #065F46;
+  --color-primary-800: #064E3B;
+  --color-primary-900: #022C22;
 
   /* Café tierra — secundario */
   --color-secondary-50:  #FAF6F1;
@@ -22,32 +22,32 @@
   --color-secondary-200: #E1CCAD;
   --color-secondary-300: #C9A87A;
   --color-secondary-400: #B08850;
-  --color-secondary-500: #8B6914;
+  --color-secondary-500: #D97706;
   --color-secondary-600: #6F5410;
   --color-secondary-700: #53400C;
   --color-secondary-800: #382B08;
   --color-secondary-900: #1C1504;
 
   /* Neutros cálidos — fondos y textos */
-  --color-neutral-50:  #FAFAF8;
-  --color-neutral-100: #F5F3EF;
-  --color-neutral-200: #E8E4DD;
-  --color-neutral-300: #D4CEC4;
-  --color-neutral-400: #A39E94;
-  --color-neutral-500: #736E64;
-  --color-neutral-600: #524E46;
-  --color-neutral-700: #3A3732;
-  --color-neutral-800: #252320;
-  --color-neutral-900: #121110;
+  --color-neutral-50:  #FAF7F2;
+  --color-neutral-100: #FDFBF7;
+  --color-neutral-200: #EAE1D9;
+  --color-neutral-300: #2D1B14;
+  --color-neutral-400: #9C8F85;
+  --color-neutral-500: #7B675B;
+  --color-neutral-600: #5B473D;
+  --color-neutral-700: #3D2F28;
+  --color-neutral-800: #1A0F0A;
+  --color-neutral-900: #0D0805;
 
   /* Semánticos */
-  --color-success:  #2D7A2D;
-  --color-warning:  #D4940A;
+  --color-success:  #059669;
+  --color-warning:  #D97706;
   --color-danger:   #C23B22;
   --color-info:     #3B7DD8;
 
   /* Tipografía */
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Radios */
   --radius-sm: 8px;
@@ -58,14 +58,14 @@
 
 /* ─── BASE ─────────────────────────────────────────────────────────────────── */
 :root {
-  --background: #FAFAF8;
-  --foreground: #252320;
+  --background: #FAF7F2;
+  --foreground: #1A0F0A;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #121110;
-    --foreground: #F5F3EF;
+    --background: #0D0805;
+    --foreground: #FDFBF7;
   }
 }
 
@@ -76,7 +76,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 17px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
