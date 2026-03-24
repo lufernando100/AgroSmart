@@ -142,6 +142,12 @@ export interface Price {
   created_at: string
 }
 
+/** Stored in orders.metadata (JSONB) — keys in English */
+export type OrderMetadataFarmerWhatsappNotify = {
+  at: string
+  status: 'sent' | 'failed' | 'skipped_no_phone'
+}
+
 export interface Order {
   id: string
   order_number: string
@@ -159,6 +165,8 @@ export interface Order {
   delivered_at?: string
   created_at: string
   updated_at: string
+  /** Extensible JSON — see database/11_orders_metadata.sql */
+  metadata?: Record<string, unknown>
 }
 
 export interface OrderItem {

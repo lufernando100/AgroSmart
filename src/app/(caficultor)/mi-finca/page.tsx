@@ -1,4 +1,5 @@
 import { MapPin, Sprout, FlaskConical } from 'lucide-react'
+import Link from 'next/link'
 
 const PROXIMAMENTE = [
   {
@@ -27,6 +28,13 @@ export default function MiFincaPage() {
       </header>
 
       <div className="px-4 py-6">
+        <Link
+          href="/mi-finca/analisis"
+          className="mb-4 inline-flex h-14 w-full items-center justify-center rounded-xl bg-[#2D7A2D] px-4 text-base font-semibold text-white"
+        >
+          Ver análisis de suelo
+        </Link>
+
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#D4B87A] bg-[#FDF6EC] p-6 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5E8C8]">
             <MapPin size={28} className="text-[#8B6914]" strokeWidth={1.5} />

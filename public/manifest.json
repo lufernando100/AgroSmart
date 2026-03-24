@@ -1,0 +1,11 @@
+{
+  "name": "GranoVivo",
+  "short_name": "GranoVivo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#2D7A2D",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "256x256", "type": "image/x-icon" }
+  ]
+}

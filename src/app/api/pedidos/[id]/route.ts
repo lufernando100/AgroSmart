@@ -1,12 +1,47 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   updateOrderByWarehouse,
   cancelOrderByFarmer,
   getOrderForUser,
 } from '@/lib/pedidos/service'
 import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
+import { recordFarmerWhatsappNotifyOutcome } from '@/lib/pedidos/farmer-whatsapp-notify'
 import { isUuid } from '@/lib/catalogo/uuid'
+
+/**
+ * Farmer phone for outbound WhatsApp: prefer service role so RLS on `users` cannot hide the row.
+ */
+async function getFarmerPhoneForWhatsApp(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  farmerId: string
+): Promise<string | undefined> {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('users')
+      .select('phone')
+      .eq('id', farmerId)
+      .maybeSingle()
+    const p = data?.phone
+    if (typeof p === 'string' && p.trim().length > 0) return p.trim()
+  } catch (e) {
+    console.warn(
+      '[orders] admin read users.phone failed, falling back to session client:',
+      e instanceof Error ? e.message : e
+    )
+  }
+
+  const { data } = await supabase
+    .from('users')
+    .select('phone')
+    .eq('id', farmerId)
+    .maybeSingle()
+  const p = data?.phone
+  if (typeof p === 'string' && p.trim().length > 0) return p.trim()
+  return undefined
+}
 
 /** Body shape for PATCH /api/pedidos/[id] */
 type PatchBody = {
@@ -119,23 +154,51 @@ export async function PATCH(
           .eq('id', id)
           .maybeSingle()
 
-        const { data: farmer } = await supabase
-          .from('users')
-          .select('phone')
-          .eq('id', orderRow?.farmer_id as string)
-          .maybeSingle()
+        const farmerId =
+          orderRow &&
+          typeof orderRow === 'object' &&
+          'farmer_id' in orderRow &&
+          typeof (orderRow as { farmer_id?: unknown }).farmer_id === 'string'
+            ? (orderRow as { farmer_id: string }).farmer_id
+            : null
 
-        const phone = farmer?.phone as string | undefined
-        if (phone) {
-          const num = (orderRow as { order_number?: string })?.order_number ?? id
-          const msg =
-            action === 'confirm'
-              ? `Tu pedido ${num} fue confirmado por el almacén. GranoVivo.`
-              : `Tu pedido ${num} no pudo ser atendido. Motivo: ${warehouseNotes ?? '—'}. GranoVivo.`
-          try {
-            await sendWhatsAppMessage(phone, msg)
-          } catch {
-            /* WhatsApp notification is optional — order update still succeeds */
+        const phone = farmerId ? await getFarmerPhoneForWhatsApp(supabase, farmerId) : undefined
+
+        const num =
+          orderRow &&
+          typeof orderRow === 'object' &&
+          'order_number' in orderRow &&
+          typeof (orderRow as { order_number?: unknown }).order_number === 'string'
+            ? (orderRow as { order_number: string }).order_number
+            : id
+        const msg =
+          action === 'confirm'
+            ? `Tu pedido ${num} fue confirmado por el almacén. GranoVivo.`
+            : `Tu pedido ${num} no pudo ser atendido. Motivo: ${warehouseNotes ?? '—'}. GranoVivo.`
+
+        if (!phone) {
+          console.warn(
+            '[orders] WhatsApp skipped: no phone in users for farmer_id',
+            farmerId ?? '(missing)'
+          )
+          await recordFarmerWhatsappNotifyOutcome({
+            orderId: id,
+            status: 'skipped_no_phone',
+          })
+        } else {
+          const result = await sendWhatsAppMessage(phone, msg)
+          if (!result.ok) {
+            console.warn('[orders] WhatsApp send failed:', result.error ?? 'unknown')
+            await recordFarmerWhatsappNotifyOutcome({
+              orderId: id,
+              status: 'failed',
+              errorHint: result.error,
+            })
+          } else {
+            await recordFarmerWhatsappNotifyOutcome({
+              orderId: id,
+              status: 'sent',
+            })
           }
         }
       }

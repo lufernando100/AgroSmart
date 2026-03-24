@@ -12,6 +12,7 @@ Stack recomendado: **Vercel** (Next.js) + **Supabase** (ya en el proyecto) + var
    - `database/07_fn_products_distance.sql`
    - `database/08_order_items_rls.sql`
    - `database/09_realtime_orders.sql`
+   - `database/11_orders_metadata.sql` (metadata JSON en pedidos — avisos al caficultor)
 3. **Authentication → URL configuration**: añade la URL de tu app en producción (y la de preview si usas PRs):
    - Site URL: `https://tu-dominio.vercel.app` (o dominio custom)
    - Redirect URLs: incluye `https://tu-dominio.vercel.app/**` y `http://localhost:3000/**` para desarrollo

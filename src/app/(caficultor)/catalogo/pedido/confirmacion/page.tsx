@@ -9,14 +9,27 @@ import type { OrderStatus } from '@/types/database'
 import { formatCOP, formatFecha } from '@/lib/utils/format'
 
 type PageProps = {
-  searchParams: Promise<{ id?: string }>
+  searchParams: Promise<{ id?: string; ids?: string }>
+}
+
+function parseOrderIds(sp: { id?: string; ids?: string }): string[] {
+  if (typeof sp.ids === 'string' && sp.ids.trim()) {
+    return sp.ids
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => isUuid(s))
+  }
+  if (typeof sp.id === 'string' && isUuid(sp.id)) {
+    return [sp.id]
+  }
+  return []
 }
 
 export default async function PedidoConfirmacionPage({ searchParams }: PageProps) {
   const sp = await searchParams
-  const id = sp.id
+  const orderIds = parseOrderIds(sp)
 
-  if (!id || !isUuid(id)) {
+  if (orderIds.length === 0) {
     redirect('/catalogo')
   }
 
@@ -25,52 +38,104 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/catalogo/pedido/confirmacion?id=${id}`)}`)
+    const next =
+      orderIds.length === 1
+        ? `/catalogo/pedido/confirmacion?id=${orderIds[0]}`
+        : `/catalogo/pedido/confirmacion?ids=${encodeURIComponent(orderIds.join(','))}`
+    redirect(`/login?next=${encodeURIComponent(next)}`)
   }
 
   const role = user.user_metadata?.role as string | undefined
-  const data = await getOrderForUser(id, user.id, role)
-  if (!data) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
-        <p className="text-[#736E64]">No encontramos este pedido.</p>
-        <Link
-          href="/catalogo"
-          className="rounded-xl bg-[#2D7A2D] px-5 py-3 font-semibold text-white"
-        >
-          Ir al catálogo
-        </Link>
-      </div>
-    )
-  }
 
-  const o = data.order as unknown as {
+  const loaded: Array<{
     id: string
     order_number: string
     status: OrderStatus
-    total: number | string
     subtotal: number | string
+    total: number | string
     created_at: string
-    warehouses:
-      | { name: string; municipality: string }
-      | { name: string; municipality: string }[]
-      | null
-  }
+    almacenNombre: string | null
+    almacenMunicipio: string | null
+    itemCount: number
+    initialPayload: {
+      order: {
+        id: string
+        order_number: string
+        status: OrderStatus
+        total: number | string
+        subtotal: number | string
+        created_at: string
+      }
+    }
+  }> = []
 
-  const initialPayload = {
-    order: {
+  for (const oid of orderIds) {
+    const data = await getOrderForUser(oid, user.id, role)
+    if (!data) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
+          <p className="text-[#736E64]">No encontramos uno o más pedidos.</p>
+          <Link
+            href="/catalogo"
+            className="rounded-xl bg-[#2D7A2D] px-5 py-3 font-semibold text-white"
+          >
+            Ir al catálogo
+          </Link>
+        </div>
+      )
+    }
+
+    const o = data.order as unknown as {
+      id: string
+      order_number: string
+      status: OrderStatus
+      total: number | string
+      subtotal: number | string
+      created_at: string
+      warehouses:
+        | { name: string; municipality: string }
+        | { name: string; municipality: string }[]
+        | null
+    }
+
+    const whRaw = Array.isArray(o.warehouses) ? o.warehouses[0] : o.warehouses
+    const meta =
+      data.order &&
+      typeof data.order === 'object' &&
+      'metadata' in data.order &&
+      data.order.metadata !== undefined &&
+      data.order.metadata !== null &&
+      typeof data.order.metadata === 'object'
+        ? (data.order.metadata as Record<string, unknown>)
+        : undefined
+
+    const initialPayload = {
+      order: {
+        id: o.id,
+        order_number: o.order_number,
+        status: o.status,
+        total: o.total,
+        subtotal: o.subtotal,
+        created_at: o.created_at,
+        metadata: meta,
+      },
+    }
+
+    loaded.push({
       id: o.id,
       order_number: o.order_number,
       status: o.status,
-      total: o.total,
       subtotal: o.subtotal,
+      total: o.total,
       created_at: o.created_at,
-    },
+      almacenNombre: whRaw?.name ?? null,
+      almacenMunicipio: whRaw?.municipality ?? null,
+      itemCount: data.items?.length ?? 0,
+      initialPayload,
+    })
   }
 
-  const whRaw = Array.isArray(o.warehouses) ? o.warehouses[0] : o.warehouses
-  const almacenNombre = whRaw?.name ?? null
-  const almacenMunicipio = whRaw?.municipality ?? null
+  const plural = loaded.length > 1
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
@@ -79,37 +144,50 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D4E8D4]">
             <CheckCircle2 size={36} className="text-[#2D7A2D]" strokeWidth={1.5} />
           </div>
-          <h1 className="text-2xl font-bold text-[#252320]">¡Pedido enviado!</h1>
+          <h1 className="text-2xl font-bold text-[#252320]">
+            {plural ? '¡Pedidos enviados!' : '¡Pedido enviado!'}
+          </h1>
           <p className="text-sm text-[#736E64]">
-            Te avisamos por WhatsApp cuando el almacén confirme.
+            {plural
+              ? 'Te avisamos por WhatsApp cuando cada almacén confirme, si el servicio está activo. También podés ver el estado abajo o volver más tarde: se actualiza solo.'
+              : 'Te avisamos por WhatsApp cuando el almacén confirme, si el servicio está activo. También podés ver el estado abajo o volver más tarde: se actualiza solo.'}
           </p>
         </div>
 
-        <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
-          <p className="text-sm text-[#736E64]">Número de pedido</p>
-          <p className="mt-0.5 font-mono text-2xl font-bold text-[#2D7A2D]">
-            {o.order_number}
-          </p>
-          <p className="mt-1 text-xs text-[#A39E94]">
-            {formatFecha(o.created_at)}
-          </p>
-          {almacenNombre ? (
-            <p className="mt-2 text-sm text-[#524E46]">
-              {almacenNombre}
-              {almacenMunicipio ? ` · ${almacenMunicipio}` : ''}
-            </p>
-          ) : null}
-          {data.items && data.items.length > 0 ? (
-            <p className="mt-1 text-sm text-[#524E46]">
-              {data.items.length} producto{data.items.length !== 1 ? 's' : ''} ·{' '}
-              <span className="tabular-nums font-semibold text-[#2D7A2D]">
-                {formatCOP(Number(o.subtotal))}
-              </span>
-            </p>
-          ) : null}
-        </div>
+        <div className="flex flex-col gap-4">
+          {loaded.map((row) => (
+            <div key={row.id}>
+              <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
+                <p className="text-sm text-[#736E64]">Número de pedido</p>
+                <p className="mt-0.5 font-mono text-2xl font-bold text-[#2D7A2D]">
+                  {row.order_number}
+                </p>
+                <p className="mt-1 text-xs text-[#A39E94]">
+                  {formatFecha(row.created_at)}
+                </p>
+                {row.almacenNombre ? (
+                  <p className="mt-2 text-sm text-[#524E46]">
+                    {row.almacenNombre}
+                    {row.almacenMunicipio ? ` · ${row.almacenMunicipio}` : ''}
+                  </p>
+                ) : null}
+                {row.itemCount > 0 ? (
+                  <p className="mt-1 text-sm text-[#524E46]">
+                    {row.itemCount} producto{row.itemCount !== 1 ? 's' : ''} ·{' '}
+                    <span className="tabular-nums font-semibold text-[#2D7A2D]">
+                      {formatCOP(Number(row.subtotal))}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
 
-        <PedidoEstadoRealtime orderId={o.id} initial={initialPayload} />
+              <PedidoEstadoRealtime
+                orderId={row.id}
+                initial={row.initialPayload}
+              />
+            </div>
+          ))}
+        </div>
 
         <div className="mt-6 flex flex-col gap-3">
           <Link

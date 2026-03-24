@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createOrder } from '@/lib/pedidos/service'
+import { createOrdersForFarmer } from '@/lib/pedidos/service'
 import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import { isUuid } from '@/lib/catalogo/uuid'
 import { friendlyDbError } from '@/lib/utils/db-errors'
+import { buildNewOrderWhatsAppMessage } from '@/lib/pedidos/whatsapp-order-summary'
 import type { Channel } from '@/types/database'
 
 const NOTES_MAX_LEN = 500
@@ -12,6 +13,14 @@ const QTY_MAX = 9_999
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x)
+}
+
+type ParsedLine = { warehouse_id: string; product_id: string; quantity: number }
+
+function parseQuantity(raw: unknown): number | null {
+  if (typeof raw !== 'number' || !Number.isInteger(raw)) return null
+  if (raw < QTY_MIN || raw > QTY_MAX) return null
+  return raw
 }
 
 export async function POST(request: Request) {
@@ -43,20 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 })
     }
 
-    const warehouseId = json.warehouse_id
-    const items = json.items
     const channelRaw = json.channel
-
-    if (typeof warehouseId !== 'string' || !isUuid(warehouseId)) {
-      return NextResponse.json({ error: 'warehouse_id inválido.' }, { status: 400 })
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Debes enviar al menos un producto.' },
-        { status: 400 }
-      )
-    }
 
     let notes: string | undefined
     if (typeof json.notes === 'string') {
@@ -70,34 +66,83 @@ export async function POST(request: Request) {
       notes = trimmed || undefined
     }
 
-    const parsedItems: { product_id: string; quantity: number }[] = []
-    for (const it of items) {
-      if (!isRecord(it)) continue
-      const pid = it.product_id
-      const qty = it.quantity
+    const defaultWarehouseId =
+      typeof json.warehouse_id === 'string' && isUuid(json.warehouse_id)
+        ? json.warehouse_id
+        : undefined
 
-      if (typeof pid !== 'string' || !isUuid(pid)) continue
+    const lines: ParsedLine[] = []
 
-      if (
-        typeof qty !== 'number' ||
-        !Number.isInteger(qty) ||
-        qty < QTY_MIN ||
-        qty > QTY_MAX
-      ) {
-        return NextResponse.json(
-          {
-            error: `La cantidad debe ser un número entero entre ${QTY_MIN} y ${QTY_MAX}.`,
-          },
-          { status: 400 }
-        )
+    const itemsRaw = json.items
+    const legacyProductId =
+      typeof json.product_id === 'string' && isUuid(json.product_id)
+        ? json.product_id
+        : null
+    const legacyQty = parseQuantity(json.quantity)
+
+    if (Array.isArray(itemsRaw) && itemsRaw.length > 0) {
+      for (const it of itemsRaw) {
+        if (!isRecord(it)) {
+          return NextResponse.json(
+            { error: 'Cada ítem del pedido debe ser un objeto.' },
+            { status: 400 }
+          )
+        }
+        const pid =
+          typeof it.product_id === 'string' && isUuid(it.product_id)
+            ? it.product_id
+            : null
+        if (!pid) {
+          return NextResponse.json(
+            { error: 'Cada ítem debe incluir product_id válido.' },
+            { status: 400 }
+          )
+        }
+        const qty = parseQuantity(it.quantity)
+        if (qty === null) {
+          return NextResponse.json(
+            {
+              error: `La cantidad debe ser un número entero entre ${QTY_MIN} y ${QTY_MAX}.`,
+            },
+            { status: 400 }
+          )
+        }
+
+        const wid =
+          typeof it.warehouse_id === 'string' && isUuid(it.warehouse_id)
+            ? it.warehouse_id
+            : defaultWarehouseId
+
+        if (!wid) {
+          return NextResponse.json(
+            {
+              error:
+                'Cada producto debe tener almacén, o envía warehouse_id en la raíz del JSON.',
+            },
+            { status: 400 }
+          )
+        }
+
+        lines.push({ warehouse_id: wid, product_id: pid, quantity: qty })
       }
-
-      parsedItems.push({ product_id: pid, quantity: qty })
+    } else if (
+      legacyProductId &&
+      defaultWarehouseId &&
+      legacyQty !== null
+    ) {
+      lines.push({
+        warehouse_id: defaultWarehouseId,
+        product_id: legacyProductId,
+        quantity: legacyQty,
+      })
     }
 
-    if (parsedItems.length === 0) {
+    if (lines.length === 0) {
       return NextResponse.json(
-        { error: 'Los productos del pedido no son válidos.' },
+        {
+          error:
+            'Debes enviar items (array) o product_id + warehouse_id + quantity.',
+        },
         { status: 400 }
       )
     }
@@ -105,36 +150,48 @@ export async function POST(request: Request) {
     const channel: Channel =
       channelRaw === 'whatsapp' || channelRaw === 'pwa' ? channelRaw : 'pwa'
 
-    const result = await createOrder({
+    const result = await createOrdersForFarmer({
       farmerId: user.id,
-      warehouseId,
       channel,
       notes,
-      items: parsedItems,
+      lines,
     })
 
-    const { data: wh } = await supabase
-      .from('warehouses')
-      .select('name, whatsapp_phone')
-      .eq('id', warehouseId)
-      .maybeSingle()
+    for (const o of result.orders) {
+      const { data: wh } = await supabase
+        .from('warehouses')
+        .select('whatsapp_phone')
+        .eq('id', o.warehouseId)
+        .maybeSingle()
 
-    if (wh?.whatsapp_phone) {
-      try {
-        await sendWhatsAppMessage(
-          wh.whatsapp_phone,
-          `Nuevo pedido ${result.orderNumber} en GranoVivo. Revisa el panel o responde por aquí.`
-        )
-      } catch {
-        /* WhatsApp optional */
+      if (wh?.whatsapp_phone) {
+        try {
+          const msg = await buildNewOrderWhatsAppMessage(supabase, o.orderId)
+          await sendWhatsAppMessage(
+            wh.whatsapp_phone as string,
+            msg ??
+              `Nuevo pedido ${o.orderNumber} en GranoVivo. Revisa el panel o responde por aquí.`
+          )
+        } catch {
+          /* WhatsApp optional */
+        }
       }
     }
 
+    const first = result.orders[0]
     return NextResponse.json({
-      id: result.orderId,
-      order_number: result.orderNumber,
-      subtotal: result.subtotal,
-      total: result.total,
+      orders: result.orders.map((o) => ({
+        id: o.orderId,
+        order_number: o.orderNumber,
+        warehouse_id: o.warehouseId,
+        subtotal: o.subtotal,
+        total: o.total,
+      })),
+      grand_total: result.total,
+      id: first?.orderId,
+      order_number: first?.orderNumber,
+      subtotal: first?.subtotal,
+      total: first?.total,
     })
   } catch (e) {
     const message =

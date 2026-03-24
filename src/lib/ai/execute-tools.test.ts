@@ -8,6 +8,11 @@ vi.mock('@/lib/supabase/admin', () => ({
           maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         }),
       }),
+      insert: () => ({
+        select: () => ({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'soil-1' }, error: null }),
+        }),
+      }),
     }),
   }),
 }))
@@ -123,6 +128,35 @@ describe('ejecutarTool', () => {
         contexto: CONTEXTO,
       })
       expect((result.result as { error: string }).error).toContain('faltante')
+    })
+  })
+
+  describe('interpretar_analisis_suelo', () => {
+    it('retorna error cuando no recibe valores numéricos', async () => {
+      const result = await ejecutarTool({
+        name: 'interpretar_analisis_suelo',
+        input: { usuario_id: 'u1', finca_id: 'f1', valores: {} },
+        contexto: CONTEXTO,
+      })
+      expect((result.result as { error: string }).error).toContain('numéricos')
+    })
+
+    it('retorna recomendación y análisis_id cuando recibe valores válidos', async () => {
+      const result = await ejecutarTool({
+        name: 'interpretar_analisis_suelo',
+        input: {
+          usuario_id: 'u1',
+          finca_id: 'f1',
+          valores: { ph: 4.9, magnesio: 0.2, azufre: 8 },
+        },
+        contexto: CONTEXTO,
+      })
+      const data = result.result as {
+        analisis_id: string
+        recomendacion: { grade: string }
+      }
+      expect(data.analisis_id).toBe('soil-1')
+      expect(data.recomendacion.grade).toBe('23-4-20-3-4')
     })
   })
 

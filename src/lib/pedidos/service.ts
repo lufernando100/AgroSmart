@@ -1,9 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import {
+  ensureFarmerUserRowBeforeAdminOrder,
+  ensureFarmerUserRowBeforeOrder,
+} from '@/lib/auth/sync-user'
 import { friendlyDbError } from '@/lib/utils/db-errors'
 import type { Channel, OrderStatus } from '@/types/database'
 
 export type OrderLineInput = {
+  product_id: string
+  quantity: number
+}
+
+/** One line for batch create: product belongs to a specific warehouse price row. */
+export type OrderLineWithWarehouse = {
+  warehouse_id: string
   product_id: string
   quantity: number
 }
@@ -70,17 +81,7 @@ export async function createOrder(params: {
     })
   }
 
-  const { data: farmerRow } = await supabase
-    .from('users')
-    .select('id')
-    .eq('id', params.farmerId)
-    .maybeSingle()
-
-  if (!farmerRow) {
-    throw new Error(
-      'Tu perfil no está listo. Cierra sesión, vuelve a entrar e intenta de nuevo.'
-    )
-  }
+  await ensureFarmerUserRowBeforeOrder(supabase, params.farmerId)
 
   const total = subtotal
   const commission = 0
@@ -124,6 +125,73 @@ export async function createOrder(params: {
   return { orderId, orderNumber, total, subtotal }
 }
 
+/**
+ * Creates one order per distinct warehouse_id. Lines are merged by (warehouse, product).
+ */
+export async function createOrdersForFarmer(params: {
+  farmerId: string
+  channel: Channel
+  notes?: string
+  lines: OrderLineWithWarehouse[]
+}): Promise<{
+  orders: Array<{
+    orderId: string
+    orderNumber: string
+    warehouseId: string
+    subtotal: number
+    total: number
+  }>
+  total: number
+}> {
+  if (params.lines.length === 0) {
+    throw new Error('El pedido debe tener al menos un producto.')
+  }
+
+  const byWarehouse = new Map<string, Map<string, number>>()
+
+  for (const line of params.lines) {
+    if (!byWarehouse.has(line.warehouse_id)) {
+      byWarehouse.set(line.warehouse_id, new Map())
+    }
+    const m = byWarehouse.get(line.warehouse_id)!
+    const prev = m.get(line.product_id) ?? 0
+    m.set(line.product_id, prev + line.quantity)
+  }
+
+  const orders: Array<{
+    orderId: string
+    orderNumber: string
+    warehouseId: string
+    subtotal: number
+    total: number
+  }> = []
+  let grandTotal = 0
+
+  for (const [warehouseId, productMap] of byWarehouse) {
+    const items: OrderLineInput[] = []
+    for (const [product_id, quantity] of productMap) {
+      items.push({ product_id, quantity })
+    }
+    const created = await createOrder({
+      farmerId: params.farmerId,
+      warehouseId,
+      channel: params.channel,
+      notes: params.notes,
+      items,
+    })
+    grandTotal += created.total
+    orders.push({
+      orderId: created.orderId,
+      orderNumber: created.orderNumber,
+      warehouseId,
+      subtotal: created.subtotal,
+      total: created.total,
+    })
+  }
+
+  return { orders, total: grandTotal }
+}
+
 export async function getOrderForUser(
   orderId: string,
   userId: string,
@@ -133,7 +201,7 @@ export async function getOrderForUser(
   const { data: order, error } = await supabase
     .from('orders')
     .select(
-      'id, order_number, status, channel, subtotal, commission, total, warehouse_confirmed_price, notes, warehouse_notes, confirmed_at, delivered_at, created_at, farmer_id, warehouse_id, warehouses ( name, whatsapp_phone, municipality )'
+      'id, order_number, status, channel, subtotal, commission, total, warehouse_confirmed_price, notes, warehouse_notes, confirmed_at, delivered_at, created_at, farmer_id, warehouse_id, metadata, warehouses ( name, whatsapp_phone, municipality )'
     )
     .eq('id', orderId)
     .maybeSingle()
@@ -448,17 +516,7 @@ export async function createOrderAdmin(params: {
     })
   }
 
-  const { data: farmerRow } = await admin
-    .from('users')
-    .select('id')
-    .eq('id', params.farmerId)
-    .maybeSingle()
-
-  if (!farmerRow) {
-    throw new Error(
-      'Tu perfil no está listo. Cierra sesión, vuelve a entrar e intenta de nuevo.'
-    )
-  }
+  await ensureFarmerUserRowBeforeAdminOrder(params.farmerId)
 
   const { data: order, error: eOrd } = await admin
     .from('orders')

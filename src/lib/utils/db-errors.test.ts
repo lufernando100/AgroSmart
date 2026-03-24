@@ -84,6 +84,15 @@ describe('friendlyDbError', () => {
     expect(msg).toContain('tardó demasiado')
   })
 
+  it('tabla ausente (schema cache PostgREST) → mensaje de migraciones', () => {
+    const msg = friendlyDbError({
+      code: '',
+      message: 'Could not find the table public.users in the schema cache',
+    })
+    expect(msg).toContain('Supabase')
+    expect(msg).toContain('01_data_model')
+  })
+
   it('error desconocido → mensaje genérico', () => {
     const msg = friendlyDbError({ code: '99999', message: 'some unknown db error' })
     expect(msg).toContain('inesperado')

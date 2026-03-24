@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { authDevBypassEnabled } from '@/lib/auth/dev-bypass'
 const PROTECTED_PREFIXES = [
   '/catalogo',
+  '/carrito',
   '/mi-finca',
   '/mis-costos',
   '/chat',
@@ -65,7 +67,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  if (needsPageAuth(pathname) && !user) {
+  if (needsPageAuth(pathname) && !user && !authDevBypassEnabled()) {
     const login = new URL('/login', request.url)
     login.searchParams.set('next', pathname)
     return NextResponse.redirect(login)
@@ -90,6 +92,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

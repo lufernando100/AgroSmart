@@ -5,6 +5,7 @@ import { ChevronLeft, Store, MapPin, Award } from 'lucide-react'
 import { getProductDetail } from '@/lib/catalogo/queries'
 import { isUuid } from '@/lib/catalogo/uuid'
 import { formatCOP } from '@/lib/utils/format'
+import { ProductDetailWarehouseActions } from '@/components/catalogo/ProductDetailWarehouseActions'
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -157,12 +158,15 @@ export default async function ProductoDetallePage({ params }: PageProps) {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/catalogo/pedido?producto_id=${product.id}&almacen_id=${pr.warehouse_id}`}
-                      className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-[#2D7A2D] text-base font-semibold text-white hover:bg-[#236023]"
-                    >
-                      Pedir aquí
-                    </Link>
+                    <ProductDetailWarehouseActions
+                      productId={product.id}
+                      productName={product.name}
+                      presentation={product.presentation}
+                      unitOfMeasure={product.unit_of_measure}
+                      warehouseId={pr.warehouse_id}
+                      warehouseName={pr.warehouse_name}
+                      unitPrice={pr.unit_price}
+                    />
                   </li>
                 )
               })}
