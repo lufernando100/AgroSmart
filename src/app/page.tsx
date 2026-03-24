@@ -12,7 +12,7 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAFAF8] px-6 py-12">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2D7A2D] shadow-md">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2D7A2D] shadow-md">
           <Leaf size={24} className="text-white" />
         </div>
         <div>
@@ -51,7 +51,7 @@ export default function LandingPage() {
         </Link>
         <Link
           href="/catalogo"
-          className="flex h-12 items-center justify-center rounded-2xl border border-[#D4CEC4] bg-white text-base font-medium text-[#524E46] hover:border-[#2D7A2D]/40 transition-colors"
+          className="flex h-14 items-center justify-center rounded-2xl border border-[#D4CEC4] bg-white text-base font-medium text-[#524E46] hover:border-[#2D7A2D]/40 transition-colors"
         >
           Ver catálogo sin registrarse
         </Link>

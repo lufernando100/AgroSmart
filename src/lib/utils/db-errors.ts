@@ -51,6 +51,15 @@ export function friendlyDbError(err: {
     return 'El servidor tardó demasiado. Revisa tu conexión e intenta de nuevo.'
   }
 
+  // Esquema / tabla ausente en Supabase (PostgREST)
+  if (
+    msg.includes('schema cache') ||
+    msg.includes('could not find the table') ||
+    (msg.includes('relation') && msg.includes('does not exist'))
+  ) {
+    return 'Los datos no están disponibles. Si administrás el despliegue, aplicá en Supabase el esquema del repositorio (database/01_data_model.sql y scripts posteriores en orden) en el mismo proyecto que usan las variables de Vercel.'
+  }
+
   // Genérico
   return 'Ocurrió un error inesperado. Reintenta en un momento.'
 }

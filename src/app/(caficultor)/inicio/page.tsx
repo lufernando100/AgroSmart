@@ -75,7 +75,7 @@ export default async function InicioPage() {
                 style={{ borderColor: color.border }}
               >
                 <div
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl"
                   style={{ backgroundColor: color.bg }}
                 >
                   <Icon size={22} style={{ color: color.icon }} strokeWidth={1.75} aria-hidden />

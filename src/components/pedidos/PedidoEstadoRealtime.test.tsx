@@ -49,6 +49,25 @@ describe('PedidoEstadoRealtime', () => {
     expect(screen.getByText('Confirmado por el almacén')).toBeInTheDocument()
   })
 
+  it('muestra aviso si WhatsApp falló y el estado ya está confirmado', () => {
+    const confirmadoWhatsappFallo = {
+      order: {
+        ...INITIAL.order,
+        status: 'confirmed' as const,
+        metadata: {
+          farmer_whatsapp_notify: {
+            at: '2026-03-24T12:00:00Z',
+            status: 'failed' as const,
+          },
+        },
+      },
+    }
+    render(<PedidoEstadoRealtime orderId="ped-1" initial={confirmadoWhatsappFallo} />)
+    expect(
+      screen.getByText(/No pudimos enviar el aviso por WhatsApp/i)
+    ).toBeInTheDocument()
+  })
+
   it('muestra label para estado rechazado', () => {
     const rechazado = {
       order: {

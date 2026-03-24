@@ -101,7 +101,7 @@ export function PedidoForm({
       {/* Product info card */}
       <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F5F3EF]">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F5F3EF]">
             <Package size={22} className="text-[#736E64]" strokeWidth={1.5} />
           </div>
           <div>
@@ -132,7 +132,7 @@ export function PedidoForm({
             aria-label="Restar uno"
             disabled={quantity <= QTY_MIN}
             onClick={() => changeQuantity(-1)}
-            className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
           >
             <Minus size={20} aria-hidden />
           </button>
@@ -148,7 +148,7 @@ export function PedidoForm({
             aria-label="Sumar uno"
             disabled={quantity >= QTY_MAX}
             onClick={() => changeQuantity(1)}
-            className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
           >
             <Plus size={20} aria-hidden />
           </button>

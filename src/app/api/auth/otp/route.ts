@@ -3,7 +3,20 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { normalizePhoneCo } from '@/lib/auth/phone'
 import { syncUserAfterAuth } from '@/lib/auth/sync-user'
+import { friendlyDbError } from '@/lib/utils/db-errors'
 import type { UserRole } from '@/types/database'
+
+/** Maps cryptic sync/DB errors after OTP to Spanish; hints deploy misconfiguration when relevant. */
+function friendlyOtpSyncError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes('row-level security') && m.includes('users')) {
+    return 'No pudimos crear tu perfil. Si administrás el despliegue, revisá en Vercel que SUPABASE_SERVICE_ROLE_KEY sea la clave «service_role» de Supabase (Settings → API), no la clave «anon».'
+  }
+  if (message.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+    return message
+  }
+  return friendlyDbError({ message })
+}
 
 /** Mensaje claro cuando Supabase rechaza el OTP (expiró, ya usado o no coincide). */
 function friendlyOtpError(message: string): string {
@@ -64,7 +77,28 @@ function redirectPathForRole(role: UserRole): string {
   return '/catalogo'
 }
 
-export async function POST(request: Request) {
+type CookieEntry = { name: string; value: string; options: Record<string, unknown> }
+
+/** Supabase SSR cookie options can include fields Next.js rejects; avoid opaque 500 on set. */
+function applyPendingCookies(response: NextResponse, pending: CookieEntry[]) {
+  for (const { name, value, options } of pending) {
+    try {
+      response.cookies.set(
+        name,
+        value,
+        options as Parameters<typeof response.cookies.set>[2]
+      )
+    } catch {
+      try {
+        response.cookies.set(name, value, { path: '/' })
+      } catch {
+        // Last resort: skip cookie rather than fail the whole auth response
+      }
+    }
+  }
+}
+
+async function postOtpHandler(request: Request): Promise<NextResponse> {
   const env = assertEnv()
   if (env instanceof NextResponse) return env
 
@@ -98,7 +132,6 @@ export async function POST(request: Request) {
 
   // Buffer de cookies que Supabase quiere setear — captura nombre, valor Y opciones.
   // Esto corrige el bug donde appendSessionCookies perdía httpOnly/maxAge/sameSite.
-  type CookieEntry = { name: string; value: string; options: Record<string, unknown> }
   const pendingCookies: CookieEntry[] = []
 
   const supabase = createServerClient(env.url, env.anonKey, {
@@ -121,9 +154,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     const response = NextResponse.json({ ok: true })
-    for (const { name, value, options } of pendingCookies) {
-      response.cookies.set(name, value, options)
-    }
+    applyPendingCookies(response, pendingCookies)
     return response
   }
 
@@ -154,8 +185,11 @@ export async function POST(request: Request) {
   const user = data.user
   if (!user) {
     return NextResponse.json(
-      { error: 'No se obtuvo usuario tras verificar el código.' },
-      { status: 500 }
+      {
+        error:
+          'No se obtuvo sesión tras verificar el código. Probá de nuevo con «Reenviar código».',
+      },
+      { status: 400 }
     )
   }
 
@@ -165,19 +199,31 @@ export async function POST(request: Request) {
       phoneE164,
     })
 
-    // Construir la respuesta final con el redirect y aplicar TODAS las cookies
-    // con sus opciones originales (httpOnly, maxAge, sameSite, path, secure).
     const final = NextResponse.json({
       ok: true,
       redirect: redirectPathForRole(role),
     })
-    for (const { name, value, options } of pendingCookies) {
-      final.cookies.set(name, value, options)
-    }
+    applyPendingCookies(final, pendingCookies)
     return final
   } catch (e) {
-    const message =
+    const raw =
       e instanceof Error ? e.message : 'Error al sincronizar usuario.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json(
+      { error: friendlyOtpSyncError(raw) },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    return await postOtpHandler(request)
+  } catch (e) {
+    const raw = e instanceof Error ? e.message : 'Error inesperado en OTP.'
+    console.error('[api/auth/otp]', e)
+    return NextResponse.json(
+      { error: friendlyOtpSyncError(raw) },
+      { status: 500 }
+    )
   }
 }

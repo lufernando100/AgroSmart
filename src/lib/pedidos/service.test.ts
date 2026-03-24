@@ -5,12 +5,16 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const CAFICULTOR_UUID = 'aaaaaaaa-0000-4000-8000-000000000001'
+
 function makeSupabaseMock(overrides: {
   users?: { data: unknown; error: unknown }
   warehouses?: { data: unknown; error: unknown }
   prices?: { data: unknown; error: unknown }
   ordersInsert?: { data: unknown; error: unknown }
   orderItemsInsert?: { data: unknown; error: unknown }
+  /** Override `auth.getUser()` (e.g. id mismatch avoids hitting admin sync in tests). */
+  authUser?: { id: string; phone: string } | null
 }) {
   let callCount = 0
 
@@ -63,6 +67,18 @@ function makeSupabaseMock(overrides: {
     }),
   }
 
+  const authUser =
+    overrides.authUser === undefined
+      ? { id: CAFICULTOR_UUID, phone: '+573001234567' }
+      : overrides.authUser
+
+  ;(builder as unknown as { auth: { getUser: ReturnType<typeof vi.fn> } }).auth =
+    {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: authUser },
+      }),
+    }
+
   return builder
 }
 
@@ -79,7 +95,6 @@ import { createOrder } from './service'
 
 const VALID_UUID = '30000000-0000-4000-8000-000000000001'
 const ALMACEN_UUID = '20000000-0000-4000-8000-000000000001'
-const CAFICULTOR_UUID = 'aaaaaaaa-0000-4000-8000-000000000001'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -89,6 +104,10 @@ describe('createOrder — casos negativos', () => {
   it('lanza error amigable cuando el caficultor no existe en users', async () => {
     const mock = makeSupabaseMock({
       users: { data: null, error: null },
+      authUser: {
+        id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+        phone: '+573001234567',
+      },
     })
     vi.mocked(createClient).mockResolvedValue(mock as never)
 

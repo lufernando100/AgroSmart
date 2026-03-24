@@ -14,6 +14,20 @@ export default function DevFlujosPage() {
 
   const pedidoUrl = `/catalogo/pedido?producto_id=${SEMILLA.producto}&almacen_id=${SEMILLA.almacen}`
 
+  const sqlWarehouseSetup = `-- 1) Supabase → Authentication → Users → copiá el UUID del usuario (mismo celular que usás en OTP).
+-- 2) Reemplazá YOUR_AUTH_USER_ID abajo. Ejecutá en SQL Editor (proyecto dev).
+-- 3) En la app: cerrá sesión → volvé a entrar con OTP → abrí /almacen/dashboard
+
+UPDATE public.users
+SET role = 'warehouse',
+    name = COALESCE(NULLIF(trim(name), ''), 'Almacén demo')
+WHERE id = 'YOUR_AUTH_USER_ID';
+
+UPDATE public.warehouses
+SET user_id = 'YOUR_AUTH_USER_ID'
+WHERE id = '${SEMILLA.almacen}';
+`
+
   return (
     <div className="min-h-screen bg-zinc-100 px-4 py-8 dark:bg-zinc-950">
       <div className="mx-auto max-w-3xl space-y-10">
@@ -74,20 +88,25 @@ export default function DevFlujosPage() {
 
         <section className="rounded-2xl border border-amber-200 bg-white p-6 dark:border-amber-900 dark:bg-zinc-900">
           <h2 className="text-lg font-semibold text-amber-900 dark:text-amber-200">
-            Almacén (requiere rol warehouse + user_id en warehouses)
+            Almacén (modo vendedor)
           </h2>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            En Supabase: <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">users.role = warehouse</code>{' '}
-            y <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">warehouses.user_id</code> = tu UUID de
-            auth.
+            Hacé login una vez con OTP (crea <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">users</code>
+            ). Luego en Supabase SQL Editor ejecutá el script (reemplazá{' '}
+            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">YOUR_AUTH_USER_ID</code>). Cerrá sesión y
+            volvé a entrar para refrescar el rol en el JWT. El almacén enlazado es el de semilla:{' '}
+            <code className="rounded bg-zinc-100 px-1 text-xs dark:bg-zinc-800">{SEMILLA.almacen}</code>
           </p>
+          <pre className="mt-4 max-h-64 overflow-auto rounded-lg border border-amber-200/80 bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100 dark:border-amber-900/50">
+            {sqlWarehouseSetup}
+          </pre>
           <ol className="mt-4 list-decimal space-y-3 pl-5 text-zinc-700 dark:text-zinc-300">
             <li>
               <Link
                 className="font-medium text-amber-900 underline dark:text-amber-400"
                 href="/almacen/dashboard"
               >
-                Dashboard
+                Dashboard almacén
               </Link>
             </li>
             <li>

@@ -2,6 +2,19 @@
 
 ---
 
+## INICIO DE SESIÓN — LEER SIEMPRE PRIMERO
+
+Antes de escribir cualquier línea de código, lee estos archivos en orden:
+
+1. `PLAN.md` — estado actual de todas las tareas (qué está ✅ completo y qué está ⏳ pendiente)
+2. `database/01_data_model.sql` — esquema completo de BD (tablas, columnas, relaciones, triggers)
+3. `src/types/database.ts` — tipos TypeScript de todas las entidades
+4. El archivo de wireframes o diseño relevante a la tarea (`docs/04_wireframes.md`, `docs/06_diseno_ui.md`)
+
+Si la tarea toca lógica existente, lee también el archivo fuente antes de modificarlo.
+
+---
+
 ## CODE LANGUAGE RULE
 
 ```
@@ -41,21 +54,22 @@ supabase gen types typescript --local > src/types/supabase.ts  # Regenerar tipos
 ## ESTADO ACTUAL DEL PROYECTO
 > Ver `PLAN.md` para el seguimiento detallado con estados por tarea
 
-**Fase 1 — Marketplace: COMPLETADA**
-- Setup Next.js 14+ con TypeScript, Tailwind, App Router
+**Fase 1 — Marketplace: COMPLETADA ✅**
+- Setup Next.js 16 con TypeScript, Tailwind, App Router
 - Auth por OTP con teléfono + middleware de roles
-- Catálogo de productos con comparador de precios (PostGIS)
+- Catálogo de productos con comparador de precios (PostGIS) + QuickAdd
 - Flujo de pedido completo (caficultor → almacén → confirmación con Realtime)
 - Panel del almacén (dashboard, pedidos, productos/precios)
-- Webhook de WhatsApp con Claude + tools (buscar, crear pedido, notificar)
+- Webhook de WhatsApp con Claude + tools (buscar_productos, crear_pedido, notificar_almacen)
 - Notificaciones WhatsApp bidireccionales (almacén responde SI/NO)
-- 81 tests automatizados (Vitest + React Testing Library)
+- Diseño tierra/café, Plus Jakarta Sans, sidebar desktop + tab bar mobile
+- 109 tests automatizados (Vitest + React Testing Library), 12 archivos
 
-**Por hacer — Fase 2 (Inteligencia agronómica):**
-- [ ] Análisis de suelo con Cenicafé + Claude Vision
-- [ ] Finca y lotes con mapa GPS
-- [ ] Floraciones y alertas proactivas
-- [ ] Aplicar diseño UI según `docs/06_diseno_ui.md`
+**Fase 2 — Inteligencia agronómica: EN CURSO**
+- [ ] 2.1 Análisis de suelo con tablas Cenicafé + Claude Vision
+- [ ] 2.2 Finca y lotes con mapa GPS (Google Maps)
+- [ ] 2.3 Floraciones y alertas proactivas
+- [ ] 2.4 Alertas climáticas con Open-Meteo
 
 Ver el plan completo de 4 fases en `AGENTS.md` y `PLAN.md`.
 

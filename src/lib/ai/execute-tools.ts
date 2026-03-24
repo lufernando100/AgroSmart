@@ -1,8 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createOrderAdmin } from '@/lib/pedidos/service'
+import { buildNewOrderWhatsAppMessage } from '@/lib/pedidos/whatsapp-order-summary'
 import { searchProductsTextOnly } from '@/lib/catalogo/queries'
 import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import type { Channel } from '@/types/database'
+import {
+  buildSoilInterpretation,
+  buildSoilRecommendation,
+  buildSoilRecommendationText,
+  type SoilInputValues,
+} from '@/lib/suelo/interpretation'
 
 export type ToolResult = { name: string; result: unknown }
 
@@ -80,9 +87,11 @@ export async function ejecutarTool(params: {
 
     if (wh?.whatsapp_phone) {
       try {
+        const detailed = await buildNewOrderWhatsAppMessage(admin, out.orderId)
         await sendWhatsAppMessage(
           wh.whatsapp_phone as string,
-          `Nuevo pedido ${out.orderNumber} en GranoVivo. Productos: ${items.length} línea(s).`
+          detailed ??
+            `Nuevo pedido ${out.orderNumber} en GranoVivo. Productos: ${items.length} línea(s).`
         )
       } catch {
         /* opcional */
@@ -108,6 +117,67 @@ export async function ejecutarTool(params: {
     }
     const r = await sendWhatsAppMessage(telefono, mensaje)
     return { name, result: r }
+  }
+
+  if (name === 'interpretar_analisis_suelo') {
+    const userId = String(input.usuario_id ?? contexto.farmerId)
+    const farmId = String(input.finca_id ?? '')
+    const plotId = input.lote_id != null ? String(input.lote_id) : undefined
+    const valores = (input.valores ?? {}) as SoilInputValues
+
+    const interpretation = buildSoilInterpretation(valores)
+    if (interpretation.length === 0) {
+      return {
+        name,
+        result: { error: 'No se encontraron valores numéricos para interpretar.' },
+      }
+    }
+
+    const recommendation = buildSoilRecommendation(valores)
+    const recommendationText = buildSoilRecommendationText(recommendation)
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from('soil_analysis')
+      .insert({
+        user_id: userId,
+        farm_id: farmId || null,
+        plot_id: plotId ?? null,
+        input_channel: contexto.channel,
+        ph: valores.ph ?? null,
+        organic_matter: valores.materia_organica ?? null,
+        phosphorus: valores.fosforo ?? null,
+        potassium: valores.potasio ?? null,
+        calcium: valores.calcio ?? null,
+        magnesium: valores.magnesio ?? null,
+        aluminum: valores.aluminio ?? null,
+        sulfur: valores.azufre ?? null,
+        iron: valores.hierro ?? null,
+        copper: valores.cobre ?? null,
+        manganese: valores.manganeso ?? null,
+        zinc: valores.zinc ?? null,
+        boron: valores.boro ?? null,
+        cec: valores.cice ?? null,
+        interpretation,
+        recommendation,
+        recommendation_text: recommendationText,
+      })
+      .select('id')
+      .maybeSingle()
+
+    if (error) {
+      return { name, result: { error: 'No fue posible guardar el análisis de suelo.' } }
+    }
+
+    return {
+      name,
+      result: {
+        analisis_id: data?.id,
+        interpretacion: interpretation,
+        recomendacion: recommendation,
+        recomendacion_texto: recommendationText,
+      },
+    }
   }
 
   return { name, result: { error: `Tool desconocida: ${name}` } }

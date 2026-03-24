@@ -590,7 +590,7 @@ Paleta tierra/cafe que conecta con el campo colombiano. Inspirada en el cafe, la
 ### Reglas de layout
 - Padding de pantalla: 16px en movil, 24px en tablet+
 - Gap entre cards: 12px
-- Touch targets: minimo 48px de alto. Los dedos de un caficultor que trabaja con las manos todo el dia son grandes. Botones pequenos son inutiles.
+- Touch targets: minimo 56px de alto. Los dedos de un caficultor que trabaja con las manos todo el dia son grandes. Botones pequenos son inutiles.
 - Cards: padding interno de 16px, border-radius 12px, sombra sutil
 - Separadores: linea de 1px en neutral-200, NO usar bordes gruesos
 - Contenido maximo: 480px de ancho en desktop (es una app movil-first)
@@ -601,7 +601,7 @@ Paleta tierra/cafe que conecta con el campo colombiano. Inspirada en el cafe, la
 
 ### Botones
 ```
-Primario:     bg primary-500, texto blanco, radius-md, h-48px, px-24px, semibold
+Primario:     bg primary-500, texto blanco, radius-md, h-[56px], px-24px, semibold
               hover: primary-600
               active: primary-700, scale(0.98)
               
@@ -613,7 +613,7 @@ Fantasma:     bg transparente, sin borde, texto primary-500
 
 Destructivo:  bg error, texto blanco (solo para acciones irreversibles)
 
-TODOS los botones: 48px de alto minimo, radius-md, transicion suave (150ms)
+TODOS los botones: 56px de alto minimo, radius-md, transicion suave (150ms)
 ```
 
 ### Cards
@@ -633,7 +633,7 @@ Card producto: Imagen (si hay) arriba, nombre bold, presentacion en text-sm,
 
 ### Inputs
 ```
-Input texto:  bg blanco, border 1px neutral-300, radius-md, h-48px, px-16px
+Input texto:  bg blanco, border 1px neutral-300, radius-md, h-[56px], px-16px
               focus: border primary-500, ring 2px primary-100
               placeholder: neutral-400
               label: arriba, text-sm, semibold, neutral-700
@@ -774,7 +774,7 @@ Desktop:             769px+          — Max 480px ancho centrado (es una app mo
 ### Reglas responsive
 - Disenar primero para 360px de ancho (celular Android comun en zona rural)
 - Probar en: Samsung Galaxy A13 (pantalla 6.6"), Xiaomi Redmi 10 (pantalla 6.5")
-- Touch targets: 48px minimo SIEMPRE. No reducir en pantallas pequenas.
+- Touch targets: 56px minimo SIEMPRE. No reducir en pantallas pequenas.
 - Texto: NO reducir tipografia en movil. 17px de cuerpo se mantiene.
 - Imagenes de productos: aspect-ratio 1:1, max 200px, lazy loading
 - Mapa: ocupa 100% del ancho, 250px de alto en movil, expandible

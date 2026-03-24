@@ -203,6 +203,8 @@ export function CatalogoCliente({
                         warehouseName={bestPrice.warehouse_name}
                         unitPrice={bestPrice.price}
                         productName={p.name}
+                        presentation={p.presentation}
+                        unitOfMeasure={p.unit_of_measure}
                       />
                     </div>
                   ) : null}

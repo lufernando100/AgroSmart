@@ -10,6 +10,10 @@ import {
   Home,
   Leaf,
 } from 'lucide-react'
+import {
+  FloatingCartButton,
+  SidebarCartLink,
+} from '@/components/cart/CartChrome'
 
 const TABS = [
   {
@@ -90,6 +94,7 @@ export default function CaficultorLayout({
               </Link>
             )
           })}
+          <SidebarCartLink />
         </nav>
 
         {/* Footer de sidebar */}
@@ -110,6 +115,8 @@ export default function CaficultorLayout({
       </div>
 
       {/* ── TAB BAR MOBILE (solo < md) ────────────────────────────────────── */}
+      <FloatingCartButton />
+
       <nav
         aria-label="Navegación principal"
         className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-[#E8E4DD] bg-white shadow-[0_-1px_8px_rgba(18,17,16,0.06)] md:hidden"

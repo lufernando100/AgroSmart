@@ -1,5 +1,7 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { phoneForDb } from '@/lib/auth/phone'
+import { normalizePhoneCo, phoneForDb } from '@/lib/auth/phone'
+import { friendlyDbError } from '@/lib/utils/db-errors'
 import type { UserRole } from '@/types/database'
 
 const ROLES: readonly UserRole[] = [
@@ -100,4 +102,135 @@ export async function syncUserAfterAuth(params: {
   if (metaError) throw new Error(metaError.message)
 
   return { role }
+}
+
+function coerceAuthPhoneToE164(raw: string): string {
+  const t = raw.trim()
+  if (!t) {
+    throw new Error('missing_phone')
+  }
+  try {
+    return normalizePhoneCo(t)
+  } catch {
+    const digits = t.replace(/\D/g, '')
+    if (digits.length === 12 && digits.startsWith('57')) {
+      return `+${digits}`
+    }
+    if (t.startsWith('+')) return t
+    throw new Error('missing_phone')
+  }
+}
+
+/**
+ * If `public.users` has no row for this auth user, try to run the same sync as OTP
+ * (needs `user.phone` on the session). Fixes desync after interrupted signup or stale cookies.
+ */
+export async function ensureFarmerUserRowBeforeOrder(
+  supabase: SupabaseClient,
+  farmerId: string
+): Promise<void> {
+  const { data: row } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', farmerId)
+    .maybeSingle()
+
+  if (row) return
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user || user.id !== farmerId) {
+    throw new Error(
+      'Tu perfil no está listo. Cierra sesión, vuelve a entrar e intenta de nuevo.'
+    )
+  }
+
+  const phoneRaw = user.phone
+  if (typeof phoneRaw !== 'string' || !phoneRaw.trim()) {
+    throw new Error(
+      'Tu perfil no está listo. Iniciá sesión otra vez con tu celular e intentá de nuevo.'
+    )
+  }
+
+  let e164: string
+  try {
+    e164 = coerceAuthPhoneToE164(phoneRaw)
+  } catch {
+    throw new Error(
+      'Tu perfil no está listo. Cierra sesión, volvé a entrar con tu número e intentá de nuevo.'
+    )
+  }
+
+  await syncUserAfterAuth({ userId: farmerId, phoneE164: e164 })
+
+  // Re-check with service role: anon/session client may not see the row if RLS on `users`
+  // blocks SELECT even for own id (common when the row was just created via admin).
+  const admin = createAdminClient()
+  const { data: again, error: verifyError } = await admin
+    .from('users')
+    .select('id')
+    .eq('id', farmerId)
+    .maybeSingle()
+
+  if (verifyError) {
+    throw new Error(friendlyDbError(verifyError))
+  }
+  if (!again) {
+    throw new Error(
+      'No pudimos preparar tu perfil. Si sigue fallando, contactá soporte.'
+    )
+  }
+}
+
+/** Same as ensureFarmerUserRowBeforeOrder for WhatsApp/admin paths (no browser cookies). */
+export async function ensureFarmerUserRowBeforeAdminOrder(
+  farmerId: string
+): Promise<void> {
+  const admin = createAdminClient()
+  const { data: row } = await admin
+    .from('users')
+    .select('id')
+    .eq('id', farmerId)
+    .maybeSingle()
+
+  if (row) return
+
+  const { data: bundle, error } = await admin.auth.admin.getUserById(farmerId)
+  if (error || !bundle?.user) {
+    throw new Error(
+      'Tu perfil no está listo. Cierra sesión, vuelve a entrar e intenta de nuevo.'
+    )
+  }
+
+  const phoneRaw = bundle.user.phone
+  if (typeof phoneRaw !== 'string' || !phoneRaw.trim()) {
+    throw new Error(
+      'Tu perfil no está listo. El caficultor debe iniciar sesión al menos una vez con su celular.'
+    )
+  }
+
+  let e164: string
+  try {
+    e164 = coerceAuthPhoneToE164(phoneRaw)
+  } catch {
+    throw new Error(
+      'Tu perfil no está listo. Cierra sesión, volvé a entrar con tu número e intentá de nuevo.'
+    )
+  }
+
+  await syncUserAfterAuth({ userId: farmerId, phoneE164: e164 })
+
+  const { data: again } = await admin
+    .from('users')
+    .select('id')
+    .eq('id', farmerId)
+    .maybeSingle()
+
+  if (!again) {
+    throw new Error(
+      'No pudimos preparar tu perfil. Si sigue fallando, contactá soporte.'
+    )
+  }
 }
