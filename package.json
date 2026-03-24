@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:whatsapp:meta": "node scripts/test-whatsapp-meta.mjs",
     "test:supabase": "node scripts/test-supabase.mjs",
     "test:supabase:prod": "node scripts/test-supabase.mjs .env.supabase.prod",
     "test:e2e": "playwright test",
