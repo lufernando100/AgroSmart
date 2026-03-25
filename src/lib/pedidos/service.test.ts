@@ -91,10 +91,68 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 import { createClient } from '@/lib/supabase/server'
-import { createOrder } from './service'
+import { createOrder, getOrderForUser } from './service'
 
 const VALID_UUID = '30000000-0000-4000-8000-000000000001'
 const ALMACEN_UUID = '20000000-0000-4000-8000-000000000001'
+const ORDER_UUID = 'bbbbbbbb-0000-4000-8000-000000000001'
+
+function orderRowForFarmer() {
+  return {
+    id: ORDER_UUID,
+    order_number: 'GV-00099',
+    status: 'pending',
+    channel: 'pwa',
+    subtotal: 45000,
+    commission: 0,
+    total: 45000,
+    farmer_id: CAFICULTOR_UUID,
+    warehouse_id: ALMACEN_UUID,
+    created_at: '2026-03-24T12:00:00Z',
+    warehouses: { name: 'Almacen Test', municipality: 'Pitalito', whatsapp_phone: '573001234567' },
+  }
+}
+
+/**
+ * Mocks Supabase for getOrderForUser: two reads on `orders` when metadata column is missing.
+ */
+function makeGetOrderSupabaseMock(opts: {
+  firstOrdersError: { message: string } | null
+  secondOrdersData: unknown
+  items?: unknown[]
+}) {
+  let ordersFromCount = 0
+  const items = opts.items ?? []
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === 'orders') {
+        ordersFromCount += 1
+        const call = ordersFromCount
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn(async () => {
+            if (call === 1 && opts.firstOrdersError) {
+              return { data: null, error: opts.firstOrdersError }
+            }
+            if (call === 1 && !opts.firstOrdersError) {
+              return { data: opts.secondOrdersData, error: null }
+            }
+            return { data: opts.secondOrdersData, error: null }
+          }),
+        }
+      }
+      if (table === 'order_items') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: items, error: null }),
+        }
+      }
+      throw new Error(`unexpected table: ${table}`)
+    }),
+  }
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -232,5 +290,56 @@ describe('createOrder — casos negativos', () => {
         items: [{ product_id: VALID_UUID, quantity: 1 }],
       })
     ).rejects.toThrow(/almacén.*no está disponible|disponible/i)
+  })
+})
+
+describe('getOrderForUser — orders.metadata migration', () => {
+  it('retries without metadata when the column is missing (prod sin 11_orders_metadata.sql)', async () => {
+    const row = orderRowForFarmer()
+    const mock = makeGetOrderSupabaseMock({
+      firstOrdersError: { message: 'column orders.metadata does not exist' },
+      secondOrdersData: row,
+      items: [],
+    })
+    vi.mocked(createClient).mockResolvedValue(mock as never)
+
+    const data = await getOrderForUser(ORDER_UUID, CAFICULTOR_UUID, 'farmer')
+
+    expect(data).not.toBeNull()
+    expect(data?.order).toMatchObject({
+      id: ORDER_UUID,
+      order_number: 'GV-00099',
+      farmer_id: CAFICULTOR_UUID,
+    })
+    expect(mock.from).toHaveBeenCalledWith('orders')
+    expect(mock.from).toHaveBeenCalledWith('order_items')
+    expect(mock.from.mock.calls.filter((c) => c[0] === 'orders').length).toBe(2)
+  })
+
+  it('succeeds on first query when metadata column exists', async () => {
+    const row = { ...orderRowForFarmer(), metadata: { farmer_whatsapp_notify: { status: 'sent' } } }
+    const mock = makeGetOrderSupabaseMock({
+      firstOrdersError: null,
+      secondOrdersData: row,
+      items: [],
+    })
+    vi.mocked(createClient).mockResolvedValue(mock as never)
+
+    const data = await getOrderForUser(ORDER_UUID, CAFICULTOR_UUID, 'farmer')
+
+    expect(data?.order).toMatchObject({ metadata: { farmer_whatsapp_notify: { status: 'sent' } } })
+    expect(mock.from.mock.calls.filter((c) => c[0] === 'orders').length).toBe(1)
+  })
+
+  it('throws when the first error is not a missing-metadata column', async () => {
+    const mock = makeGetOrderSupabaseMock({
+      firstOrdersError: { message: 'permission denied for table orders' },
+      secondOrdersData: orderRowForFarmer(),
+    })
+    vi.mocked(createClient).mockResolvedValue(mock as never)
+
+    await expect(getOrderForUser(ORDER_UUID, CAFICULTOR_UUID, 'farmer')).rejects.toThrow(
+      /permission denied/i
+    )
   })
 })

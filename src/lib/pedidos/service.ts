@@ -5,6 +5,7 @@ import {
   ensureFarmerUserRowBeforeOrder,
 } from '@/lib/auth/sync-user'
 import { friendlyDbError } from '@/lib/utils/db-errors'
+import { isMissingOrdersMetadataColumn } from '@/lib/pedidos/orders-metadata-migration'
 import type { Channel, OrderStatus } from '@/types/database'
 
 export type OrderLineInput = {
@@ -29,17 +30,6 @@ const ORDER_SELECT_FOR_USER_WITH_META =
 
 const ORDER_SELECT_FOR_USER_NO_META =
   'id, order_number, status, channel, subtotal, commission, total, warehouse_confirmed_price, notes, warehouse_notes, confirmed_at, delivered_at, created_at, farmer_id, warehouse_id, warehouses ( name, whatsapp_phone, municipality )'
-
-function isMissingOrdersMetadataColumn(err: { message?: string }): boolean {
-  const m = (err.message ?? '').toLowerCase()
-  return (
-    m.includes('metadata') &&
-    (m.includes('does not exist') ||
-      m.includes('schema cache') ||
-      m.includes('could not find the') ||
-      m.includes('undefined column'))
-  )
-}
 
 export async function createOrder(params: {
   farmerId: string
