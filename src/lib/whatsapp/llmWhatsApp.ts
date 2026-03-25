@@ -1,6 +1,7 @@
 import { generateText, tool, type CoreMessage } from 'ai'
 import { createAnthropic } from '@anthropic-ai/sdk'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { SYSTEM_PROMPT } from '@/lib/ai/system_prompt_tools'
 import { ejecutarTool } from '@/lib/ai/execute-tools'
@@ -10,7 +11,7 @@ export async function runLLMParaWhatsApp(params: {
   farmerId: string
   textoUsuario: string
 }): Promise<string> {
-  const modelProvider = process.env.LLM_PROVIDER || 'anthropic' // 'anthropic' o 'google'
+  const modelProvider = process.env.LLM_PROVIDER || 'anthropic' // 'anthropic', 'google', o 'openai'
   
   let model;
 
@@ -19,6 +20,11 @@ export async function runLLMParaWhatsApp(params: {
     if (!key) return 'El asistente no está configurado (GOOGLE_API_KEY).'
     const google = createGoogleGenerativeAI({ apiKey: key })
     model = google('gemini-2.5-flash')
+  } else if (modelProvider === 'openai') {
+    const key = process.env.OPENAI_API_KEY
+    if (!key) return 'El asistente no está configurado (OPENAI_API_KEY).'
+    const openai = createOpenAI({ apiKey: key })
+    model = openai('gpt-4o')
   } else {
     // Default to anthropic
     const key = process.env.ANTHROPIC_API_KEY
