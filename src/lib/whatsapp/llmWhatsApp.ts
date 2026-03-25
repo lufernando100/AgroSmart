@@ -2,6 +2,7 @@ import { generateText, tool, type CoreMessage } from 'ai'
 import { createAnthropic } from '@anthropic-ai/sdk'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
+import { createDeepSeek } from '@ai-sdk/deepseek'
 import { z } from 'zod'
 import { SYSTEM_PROMPT } from '@/lib/ai/system_prompt_tools'
 import { ejecutarTool } from '@/lib/ai/execute-tools'
@@ -11,26 +12,44 @@ export async function runLLMParaWhatsApp(params: {
   farmerId: string
   textoUsuario: string
 }): Promise<string> {
-  const modelProvider = process.env.LLM_PROVIDER || 'anthropic' // 'anthropic', 'google', o 'openai'
+  const modelProvider = process.env.LLM_PROVIDER || 'anthropic' // 'anthropic', 'google', 'openai', 'deepseek', 'xai', etc
+  const modelName = process.env.LLM_MODEL || 'claude-3-5-sonnet-20241022' // The specific model string
   
   let model;
 
   if (modelProvider === 'google') {
-    const key = process.env.GOOGLE_API_KEY
-    if (!key) return 'El asistente no está configurado (GOOGLE_API_KEY).'
+    const key = process.env.GOOGLE_API_KEY || process.env.LLM_API_KEY
+    if (!key) return 'El asistente no está configurado (API_KEY requerida).'
     const google = createGoogleGenerativeAI({ apiKey: key })
-    model = google('gemini-2.5-flash')
+    model = google(modelName)
   } else if (modelProvider === 'openai') {
-    const key = process.env.OPENAI_API_KEY
-    if (!key) return 'El asistente no está configurado (OPENAI_API_KEY).'
+    const key = process.env.OPENAI_API_KEY || process.env.LLM_API_KEY
+    if (!key) return 'El asistente no está configurado (API_KEY requerida).'
     const openai = createOpenAI({ apiKey: key })
-    model = openai('gpt-4o')
+    model = openai(modelName)
+  } else if (modelProvider === 'deepseek') {
+    const key = process.env.DEEPSEEK_API_KEY || process.env.LLM_API_KEY
+    if (!key) return 'El asistente no está configurado (API_KEY requerida).'
+    const deepseek = createDeepSeek({ apiKey: key })
+    model = deepseek(modelName)
+  } else if (modelProvider === 'openai-compatible') {
+     // Esto permite usar CUALQUIER API que sea compatible con el estándar de OpenAI
+     // (ej. Groq, xAI, LMStudio local, vLLM, Ollama, Together AI, etc.)
+     const key = process.env.LLM_API_KEY
+     const url = process.env.LLM_BASE_URL
+     if (!key || !url) return 'Falta configurar LLM_API_KEY o LLM_BASE_URL para el proveedor genérico.'
+     
+     const customOpenAI = createOpenAI({
+        apiKey: key,
+        baseURL: url,
+     })
+     model = customOpenAI(modelName)
   } else {
     // Default to anthropic
-    const key = process.env.ANTHROPIC_API_KEY
-    if (!key) return 'El asistente no está configurado (ANTHROPIC_API_KEY).'
+    const key = process.env.ANTHROPIC_API_KEY || process.env.LLM_API_KEY
+    if (!key) return 'El asistente no está configurado (API_KEY requerida).'
     const anthropic = createAnthropic({ apiKey: key })
-    model = anthropic('claude-3-5-sonnet-20241022')
+    model = anthropic(modelName)
   }
 
   const system = `${SYSTEM_PROMPT}\n\n## Contexto de esta conversación\n- caficultor_id (UUID): ${params.farmerId}\n- Usa siempre este caficultor_id en crear_pedido y buscar_productos.`
