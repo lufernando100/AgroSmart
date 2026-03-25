@@ -23,6 +23,24 @@ function tempOrderNumber(): string {
   return `T-${crypto.randomUUID().replace(/-/g, '').slice(0, 18)}`
 }
 
+/** Includes `metadata` (JSONB) — requires `database/11_orders_metadata.sql` on Supabase. */
+const ORDER_SELECT_FOR_USER_WITH_META =
+  'id, order_number, status, channel, subtotal, commission, total, warehouse_confirmed_price, notes, warehouse_notes, confirmed_at, delivered_at, created_at, farmer_id, warehouse_id, metadata, warehouses ( name, whatsapp_phone, municipality )'
+
+const ORDER_SELECT_FOR_USER_NO_META =
+  'id, order_number, status, channel, subtotal, commission, total, warehouse_confirmed_price, notes, warehouse_notes, confirmed_at, delivered_at, created_at, farmer_id, warehouse_id, warehouses ( name, whatsapp_phone, municipality )'
+
+function isMissingOrdersMetadataColumn(err: { message?: string }): boolean {
+  const m = (err.message ?? '').toLowerCase()
+  return (
+    m.includes('metadata') &&
+    (m.includes('does not exist') ||
+      m.includes('schema cache') ||
+      m.includes('could not find the') ||
+      m.includes('undefined column'))
+  )
+}
+
 export async function createOrder(params: {
   farmerId: string
   warehouseId: string
@@ -198,13 +216,19 @@ export async function getOrderForUser(
   role: string | undefined
 ) {
   const supabase = await createClient()
-  const { data: order, error } = await supabase
+  let { data: order, error } = await supabase
     .from('orders')
-    .select(
-      'id, order_number, status, channel, subtotal, commission, total, warehouse_confirmed_price, notes, warehouse_notes, confirmed_at, delivered_at, created_at, farmer_id, warehouse_id, metadata, warehouses ( name, whatsapp_phone, municipality )'
-    )
+    .select(ORDER_SELECT_FOR_USER_WITH_META)
     .eq('id', orderId)
     .maybeSingle()
+
+  if (error && isMissingOrdersMetadataColumn(error)) {
+    ;({ data: order, error } = await supabase
+      .from('orders')
+      .select(ORDER_SELECT_FOR_USER_NO_META)
+      .eq('id', orderId)
+      .maybeSingle())
+  }
 
   if (error) throw new Error(error.message)
   if (!order) return null
