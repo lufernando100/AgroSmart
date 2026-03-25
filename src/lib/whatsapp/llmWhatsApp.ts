@@ -6,7 +6,47 @@ import { createDeepSeek } from '@ai-sdk/deepseek'
 import { z } from 'zod'
 import { SYSTEM_PROMPT } from '@/lib/ai/system_prompt_tools'
 import { ejecutarTool } from '@/lib/ai/execute-tools'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Channel } from '@/types/database'
+
+const HISTORY_LIMIT = 12
+
+type ConversationRow = {
+  role: string | null
+  content: string | null
+}
+
+async function loadConversationHistory(farmerId: string): Promise<CoreMessage[]> {
+  try {
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from('conversations')
+      .select('role, content')
+      .eq('user_id', farmerId)
+      .order('created_at', { ascending: false })
+      .limit(HISTORY_LIMIT)
+
+    if (error) {
+      console.error('[runLLMParaWhatsApp] Error loading conversation history:', error.message)
+      return []
+    }
+
+    const rows = (data ?? []) as ConversationRow[]
+    return rows
+      .slice()
+      .reverse()
+      .map((row): CoreMessage | null => {
+        const role = row.role === 'assistant' ? 'assistant' : row.role === 'user' ? 'user' : null
+        const content = row.content?.trim()
+        if (!role || !content) return null
+        return { role, content }
+      })
+      .filter((msg): msg is CoreMessage => msg !== null)
+  } catch (error) {
+    console.error('[runLLMParaWhatsApp] Unexpected history error:', error)
+    return []
+  }
+}
 
 export async function runLLMParaWhatsApp(params: {
   farmerId: string
@@ -55,9 +95,15 @@ export async function runLLMParaWhatsApp(params: {
 
   const system = `${SYSTEM_PROMPT}\n\n## Contexto de esta conversación\n- caficultor_id (UUID): ${params.farmerId}\n- Usa siempre este caficultor_id en crear_pedido y buscar_productos.`
 
-  const messages: CoreMessage[] = [
-    { role: 'user', content: params.textoUsuario },
-  ]
+  const history = await loadConversationHistory(params.farmerId)
+  const cleanUserText = params.textoUsuario.trim()
+  const lastHistoryMessage = history[history.length - 1]
+  const alreadyHasCurrentUserMessage =
+    lastHistoryMessage?.role === 'user' && lastHistoryMessage.content === cleanUserText
+
+  const messages: CoreMessage[] = alreadyHasCurrentUserMessage
+    ? history
+    : [...history, { role: 'user', content: cleanUserText }]
 
   try {
     const { text } = await generateText({
@@ -67,7 +113,8 @@ export async function runLLMParaWhatsApp(params: {
       maxSteps: 5,
       tools: {
         buscar_productos: tool({
-          description: 'Busca productos en el catalogo por nombre, categoria o tipo. Devuelve productos con precios de almacenes cercanos al caficultor.',
+          description:
+            'Busca productos en el catalogo. En WhatsApp presenta max 3 opciones numeradas + CTA (ver prompt). Distancia solo con ubicacion confirmada.',
           parameters: z.object({
             termino_busqueda: z.string().describe("Nombre del producto o termino de busqueda. Ej: '25-4-24', 'urea', 'fungicida', 'glifosato'"),
             categoria: z.enum(["fertilizante", "agroquimico", "herramienta", "semilla", "todos"]).optional().describe("Categoria para filtrar"),
@@ -82,7 +129,8 @@ export async function runLLMParaWhatsApp(params: {
           },
         }),
         crear_pedido: tool({
-          description: "Crea un pedido nuevo de un caficultor a un almacen. El pedido queda en estado 'pendiente' hasta que el almacen confirme.",
+          description:
+            "Crea pedido pendiente. Usar solo tras resumen y confirmacion del usuario (ej. CONFIRMAR). Incluye almacen_id, items con producto_id, cantidad y precio_unitario.",
           parameters: z.object({
             caficultor_id: z.string().describe("UUID del caficultor que hace el pedido"),
             almacen_id: z.string().describe("UUID del almacen seleccionado"),

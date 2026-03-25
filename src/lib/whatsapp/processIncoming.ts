@@ -5,6 +5,7 @@ import { intentarProcesarSiNoAlmacen } from '@/lib/whatsapp/almacenRespuesta'
 import { obtenerUrlMediaWhatsApp } from '@/lib/whatsapp/media'
 import { transcribirAudioWhatsapp } from '@/lib/ai/transcribe-audio'
 import { runLLMParaWhatsApp } from '@/lib/whatsapp/llmWhatsApp'
+import { ASSISTANT_PROMPT_VERSION } from '@/lib/ai/prompts/version'
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -113,6 +114,7 @@ async function farmerFlow(
       role: 'assistant',
       content: response,
       content_type: 'text',
+      assistant_prompt_version: ASSISTANT_PROMPT_VERSION,
     })
   } catch (err) {
     console.error('[farmerFlow] Error en llamada a Claude (Anthropic):', err instanceof Error ? err.message : err)

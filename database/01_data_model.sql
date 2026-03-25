@@ -378,6 +378,7 @@ CREATE TABLE conversations (
     tokens_output INTEGER,
     estimated_cost_usd DECIMAL(8,4),
     escalated_to_human BOOLEAN DEFAULT false,
+    assistant_prompt_version VARCHAR(32),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
