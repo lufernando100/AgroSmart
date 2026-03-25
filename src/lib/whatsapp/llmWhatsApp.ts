@@ -1,5 +1,5 @@
 import { generateText, tool, type CoreMessage } from 'ai'
-import { createAnthropic } from '@anthropic-ai/sdk'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createDeepSeek } from '@ai-sdk/deepseek'
@@ -15,7 +15,8 @@ export async function runLLMParaWhatsApp(params: {
   const modelProvider = process.env.LLM_PROVIDER || 'anthropic' // 'anthropic', 'google', 'openai', 'deepseek', 'xai', etc
   const modelName = process.env.LLM_MODEL || 'claude-3-5-sonnet-20241022' // The specific model string
   
-  let model;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let model: any;
 
   if (modelProvider === 'google') {
     const key = process.env.GOOGLE_API_KEY || process.env.LLM_API_KEY
@@ -63,7 +64,7 @@ export async function runLLMParaWhatsApp(params: {
       model,
       system,
       messages,
-      maxSteps: 5, // Permite a la IA hacer hasta 5 llamadas a herramientas (tools) antes de responder
+      maxSteps: 5,
       tools: {
         buscar_productos: tool({
           description: 'Busca productos en el catalogo por nombre, categoria o tipo. Devuelve productos con precios de almacenes cercanos al caficultor.',
