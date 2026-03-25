@@ -34,9 +34,13 @@ export async function POST(request: Request) {
     return new Response('OK', { status: 200 })
   }
 
-  queueMicrotask(() => {
-    void processIncomingWebhook(body)
-  })
+  // Esperar a que se procese el webhook para que Vercel Serverless no mate la ejecución
+  // antes de que termine de llamar a Supabase o a Anthropic (Claude)
+  try {
+    await processIncomingWebhook(body)
+  } catch (err) {
+    console.error('Error procesando webhook de WhatsApp:', err)
+  }
 
   return new Response('OK', { status: 200 })
 }

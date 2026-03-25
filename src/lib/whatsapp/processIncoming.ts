@@ -56,7 +56,7 @@ export async function processIncomingWebhook(body: unknown) {
       await farmerFlow(from, text, msgId)
     }
   } catch (e) {
-    console.error('processIncomingWebhook', e)
+    console.error('[processIncomingWebhook] Error general:', e)
   }
 }
 
@@ -67,11 +67,16 @@ async function farmerFlow(
 ) {
   const digits = fromPhone.replace(/\D/g, '')
   const user = await findUserByPhoneDigits(digits)
+  
   if (!user) {
-    await sendWhatsAppMessage(
+    console.warn(`[farmerFlow] Número no encontrado en public.users: ${digits}`)
+    const result = await sendWhatsAppMessage(
       fromPhone,
       'GranoVivo: no encontramos tu número registrado. Entra en la app e inicia sesión con tu celular para vincular tu cuenta.'
     )
+    if (!result.ok) {
+      console.error('[farmerFlow] Error enviando mensaje de "usuario no encontrado":', result.error)
+    }
     return
   }
 
@@ -87,19 +92,29 @@ async function farmerFlow(
     content_type: 'text',
   })
 
-  const response = await runClaudeParaWhatsApp({
-    farmerId: user.id,
-    textoUsuario: text,
-  })
+  console.log(`[farmerFlow] Llamando a Claude para usuario: ${user.id}...`)
+  
+  try {
+    const response = await runClaudeParaWhatsApp({
+      farmerId: user.id,
+      textoUsuario: text,
+    })
 
-  await sendWhatsAppMessage(fromPhone, response)
+    console.log(`[farmerFlow] Claude respondió, enviando mensaje a WhatsApp...`)
+    const sendResult = await sendWhatsAppMessage(fromPhone, response)
+    if (!sendResult.ok) {
+      console.error('[farmerFlow] Error enviando respuesta de Claude:', sendResult.error)
+    }
 
-  // Record the assistant reply in conversation history
-  await admin.from('conversations').insert({
-    user_id: user.id,
-    channel: 'whatsapp',
-    role: 'assistant',
-    content: response,
-    content_type: 'text',
-  })
+    // Record the assistant reply in conversation history
+    await admin.from('conversations').insert({
+      user_id: user.id,
+      channel: 'whatsapp',
+      role: 'assistant',
+      content: response,
+      content_type: 'text',
+    })
+  } catch (err) {
+    console.error('[farmerFlow] Error en llamada a Claude (Anthropic):', err instanceof Error ? err.message : err)
+  }
 }
