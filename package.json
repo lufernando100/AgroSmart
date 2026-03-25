@@ -16,6 +16,8 @@
     "test:whatsapp:meta": "node scripts/test-whatsapp-meta.mjs",
     "test:supabase": "node scripts/test-supabase.mjs",
     "test:supabase:prod": "node scripts/test-supabase.mjs .env.supabase.prod",
+    "verify:local": "node scripts/verify-setup.mjs .env.local",
+    "verify:prod": "node scripts/verify-setup.mjs .env.supabase.prod",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

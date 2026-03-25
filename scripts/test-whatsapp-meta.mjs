@@ -1,43 +1,31 @@
 /**
- * Sanity check: reads WHATSAPP_* from repo-root .env.local and GETs the phone object from Graph API.
- * Does not send messages. Run: node scripts/test-whatsapp-meta.mjs
+ * Sanity check: reads WHATSAPP_* from an env file and GETs the phone object from Graph API.
+ * Does not send messages.
+ *
+ *   node scripts/test-whatsapp-meta.mjs
+ *   node scripts/test-whatsapp-meta.mjs .env.local
+ *   node scripts/test-whatsapp-meta.mjs .env.supabase.prod
  */
-import fs from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { loadEnvFile } from './load-env-file.mjs'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const envPath = join(__dirname, '..', '.env.local')
+const envArg = process.argv[2] || '.env.local'
+const loaded = loadEnvFile(envArg)
 
-if (!fs.existsSync(envPath)) {
-  console.error('❌ No existe .env.local en la raíz del proyecto.')
+if (!loaded.ok) {
+  console.error(`❌ No existe el archivo de entorno: ${loaded.path}`)
   process.exit(1)
 }
 
-const envContent = fs.readFileSync(envPath, 'utf8')
-const envVars = Object.fromEntries(
-  envContent
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#') && line.includes('='))
-    .map((line) => {
-      const idx = line.indexOf('=')
-      return [
-        line.slice(0, idx),
-        line.slice(idx + 1).replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1'),
-      ]
-    })
-)
-
-const token = envVars['WHATSAPP_TOKEN']
-const phoneId = envVars['WHATSAPP_PHONE_NUMBER_ID']
+const token = process.env.WHATSAPP_TOKEN
+const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
 
 if (!token || !phoneId) {
-  console.error('❌ Falta WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID en .env.local')
+  console.error('❌ Falta WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID en el archivo de entorno.')
   process.exit(1)
 }
 
 async function testConnection() {
+  console.log(`(env: ${loaded.path})`)
   console.log('Probando conexión con Meta (WhatsApp Graph API)...')
   console.log(`Phone ID a consultar: ${phoneId}`)
 
@@ -68,10 +56,12 @@ async function testConnection() {
           '\n💡 Tip: El ID del número de teléfono es incorrecto o no pertenece a la app del token.'
         )
       }
+      process.exit(1)
     }
   } catch (err) {
     console.error('\n❌ Error de red:', err instanceof Error ? err.message : err)
+    process.exit(1)
   }
 }
 
-testConnection()
+await testConnection()

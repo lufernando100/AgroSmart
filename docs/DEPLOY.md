@@ -56,13 +56,25 @@ Cuando tengas la URL de producción:
 
 ## 4. Comprobaciones antes de confiar en prod
 
-En local (con variables de prod **no** pegadas en el repo; usa solo en Vercel):
+### Conectividad (sin commitear secretos de prod)
+
+- **Desarrollo:** con `.env.local` completo → `npm run verify:local` (checklist de variables + prueba Supabase + WhatsApp Meta GET).
+- **Producción desde tu PC:** copiá en **`.env.supabase.prod`** las variables de Vercel (Production), mismo formato que `.env.local`, **no** subas ese archivo a Git → `npm run verify:prod`.
+
+Comandos sueltos:
+
+- `npm run test:supabase` / `npm run test:supabase:prod`
+- `npm run test:whatsapp:meta` (acepta ruta de env: `node scripts/test-whatsapp-meta.mjs .env.supabase.prod`)
+
+### CI y humo en la app
+
+En local (variables de prod **no** en el repo; solo en Vercel):
 
 ```bash
 npm run ci
 ```
 
-Tras deploy: login OTP, una ruta del catálogo (con BD sembrada), y un ping al webhook (GET con verify token).
+Tras deploy: login OTP, una ruta del catálogo (con BD sembrada), y un ping al webhook (GET con verify token). Ver también el bloque impreso al final de `npm run verify:local`.
 
 ## 5. Dominio propio (opcional)
 
