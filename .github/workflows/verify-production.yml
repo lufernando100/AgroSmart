@@ -1,0 +1,45 @@
+# Smoke tests against the deployed app (production URL on Vercel).
+# Configure repository secrets: PRODUCTION_URL, HEALTH_CHECK_SECRET (same value as in Vercel).
+name: Verify production
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Lunes 15:00 UTC (~10:00 Colombia)
+    - cron: '0 15 * * 1'
+
+jobs:
+  smoke:
+    name: Health endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Public liveness
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_URL }}
+        run: |
+          set -e
+          test -n "$BASE_URL" || { echo "Missing secret PRODUCTION_URL (e.g. https://your-app.vercel.app)"; exit 1; }
+          echo "GET $BASE_URL/api/health"
+          curl -sfS "$BASE_URL/api/health" | tee /tmp/health.json
+          node -e "const j=require('/tmp/health.json'); if(!j.ok) process.exit(1)"
+
+      - name: Readiness (Supabase + WhatsApp env flags)
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_URL }}
+          SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
+        run: |
+          set -e
+          test -n "$SECRET" || { echo "Missing secret HEALTH_CHECK_SECRET (must match Vercel HEALTH_CHECK_SECRET)"; exit 1; }
+          echo "GET $BASE_URL/api/health/ready"
+          code=$(curl -sS -o /tmp/ready.json -w "%{http_code}" \
+            -H "Authorization: Bearer $SECRET" \
+            "$BASE_URL/api/health/ready")
+          cat /tmp/ready.json
+          echo ""
+          test "$code" = "200" || { echo "Expected HTTP 200, got $code"; exit 1; }
+          node -e "
+            const j=require('/tmp/ready.json');
+            if(!j.ok) process.exit(1);
+            if(!j.supabase_ok) process.exit(1);
+          "

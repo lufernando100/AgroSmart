@@ -76,6 +76,18 @@ npm run ci
 
 Tras deploy: login OTP, una ruta del catálogo (con BD sembrada), y un ping al webhook (GET con verify token). Ver también el bloque impreso al final de `npm run verify:local`.
 
+### Health en producción (Vercel + GitHub Actions)
+
+1. En **Vercel** → Environment Variables → **Production**: añade `HEALTH_CHECK_SECRET` (cadena larga aleatoria; no la compartas en público).
+2. Tras redeploy, prueba en terminal:
+   - `curl -sS "https://TU-DOMINIO.vercel.app/api/health"` → debe devolver JSON con `"ok":true`.
+   - `curl -sS -H "Authorization: Bearer TU_SECRETO" "https://TU-DOMINIO.vercel.app/api/health/ready"` → HTTP **200** si Supabase responde; el cuerpo incluye `warnings` si faltan variables de WhatsApp.
+   - Opcional Graph API: añade `?probe_whatsapp=1` al URL de `ready` (misma cabecera `Authorization`).
+3. En **GitHub** → repo → **Settings → Secrets and variables → Actions**:
+   - `PRODUCTION_URL` = `https://tu-dominio.vercel.app` (sin barra final).
+   - `HEALTH_CHECK_SECRET` = el mismo valor que en Vercel.
+4. Ejecutá el workflow **Verify production** (Actions → Verify production → Run workflow) o esperá el cron semanal.
+
 ## 5. Dominio propio (opcional)
 
 Vercel → Project → **Domains**: añade `app.tudominio.com` y configura DNS según indicaciones. Actualiza Supabase Auth redirect URLs y el webhook de WhatsApp a la nueva URL.
