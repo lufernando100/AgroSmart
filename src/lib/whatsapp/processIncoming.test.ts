@@ -29,8 +29,8 @@ vi.mock('@/lib/ai/transcribe-audio', () => ({
   transcribirAudioWhatsapp: vi.fn().mockResolvedValue(null),
 }))
 
-vi.mock('@/lib/whatsapp/claudeWhatsApp', () => ({
-  runClaudeParaWhatsApp: vi.fn().mockResolvedValue('Respuesta del asistente'),
+vi.mock('@/lib/whatsapp/llmWhatsApp', () => ({
+  runLLMParaWhatsApp: vi.fn().mockResolvedValue('Respuesta del asistente'),
 }))
 
 import { processIncomingWebhook } from './processIncoming'

@@ -4,7 +4,7 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp/send'
 import { intentarProcesarSiNoAlmacen } from '@/lib/whatsapp/almacenRespuesta'
 import { obtenerUrlMediaWhatsApp } from '@/lib/whatsapp/media'
 import { transcribirAudioWhatsapp } from '@/lib/ai/transcribe-audio'
-import { runClaudeParaWhatsApp } from '@/lib/whatsapp/claudeWhatsApp'
+import { runLLMParaWhatsApp } from '@/lib/whatsapp/llmWhatsApp'
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -95,10 +95,10 @@ async function farmerFlow(
   console.log(`[farmerFlow] Llamando a Claude para usuario: ${user.id}...`)
   
   try {
-    const response = await runClaudeParaWhatsApp({
-      farmerId: user.id,
-      textoUsuario: text,
-    })
+  const response = await runLLMParaWhatsApp({
+    farmerId: user.id,
+    textoUsuario: text,
+  })
 
     console.log(`[farmerFlow] Claude respondió, enviando mensaje a WhatsApp...`)
     const sendResult = await sendWhatsAppMessage(fromPhone, response)
