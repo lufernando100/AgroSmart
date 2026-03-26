@@ -40,6 +40,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
             categories={categories}
             products={products}
             activeCategoryId={categoryId ?? null}
+            initialSearch={sp.q ?? ''}
             bestPricesByProduct={bestPricesByProduct}
           />
         </Suspense>

@@ -1,36 +1,27 @@
-// Manual types — replace with: supabase gen types typescript
+// Enums: sourced from auto-generated supabase.ts (single source of truth)
+// To regenerate: SUPABASE_ACCESS_TOKEN=<token> npx supabase gen types typescript --project-id faxcioyvwviexsgrtqjz > src/types/supabase.ts
+import type { Database } from './supabase'
 
-export type SectorType = 'coffee' | 'livestock' | 'cocoa' | 'other'
-export type UserRole = 'farmer' | 'warehouse' | 'admin' | 'cooperative'
-export type OrderStatus = 'pending' | 'confirmed' | 'rejected' | 'delivered' | 'cancelled'
-export type PriceOrigin =
-  | 'manual'
-  | 'whatsapp_photo'
-  | 'api_integration'
-  | 'sipsa_reference'
-export type ExpenseCategory =
-  | 'fertilizer'
-  | 'agrochemical'
-  | 'tool'
-  | 'labor'
-  | 'transport'
-  | 'seed'
-  | 'other'
-export type CropStage = 'nursery' | 'establishment' | 'production' | 'stump'
-export type PlotStatus =
-  | 'newly_planted'
-  | 'in_production'
-  | 'due_for_renewal'
-  | 'renewed'
-export type AlertType =
-  | 'weather'
-  | 'pest'
-  | 'price'
-  | 'fertilization'
-  | 'harvest'
-  | 'general'
-export type Channel = 'whatsapp' | 'pwa'
-export type NutrientLevel = 'low' | 'medium' | 'high'
+type Enums = Database['public']['Enums']
+
+export type SectorType     = Enums['sector_type']
+export type UserRole       = Enums['user_role']
+export type OrderStatus    = Enums['order_status']
+export type PriceOrigin    = Enums['price_origin']
+export type ExpenseCategory = Enums['expense_category']
+export type CropStage      = Enums['crop_stage']
+export type PlotStatus     = Enums['plot_status']
+export type AlertType      = Enums['alert_type']
+export type Channel        = Enums['channel']
+export type NutrientLevel  = Enums['nutrient_level']
+
+export interface UserRoles {
+  id: string
+  user_id: string
+  role: UserRole
+  is_active: boolean
+  created_at: string
+}
 
 export interface User {
   id: string

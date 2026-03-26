@@ -108,6 +108,59 @@ describe('POST /api/suelo/interpretar', () => {
     )
   })
 
+  it('persiste image_url cuando se envía', async () => {
+    const { supabase, state } = makeSupabaseMock()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+
+    const imageUrl = 'https://example.com/soil-images/test.jpg'
+    await POST(
+      new Request('http://localhost/api/suelo/interpretar', {
+        method: 'POST',
+        body: JSON.stringify({
+          farm_id: FARM_ID,
+          image_url: imageUrl,
+          valores: { ph: 5.0 },
+        }),
+      })
+    )
+
+    expect(state.payload).toEqual(
+      expect.objectContaining({ image_url: imageUrl })
+    )
+  })
+
+  it('guarda image_url null cuando no se envía', async () => {
+    const { supabase, state } = makeSupabaseMock()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+
+    await POST(
+      new Request('http://localhost/api/suelo/interpretar', {
+        method: 'POST',
+        body: JSON.stringify({ farm_id: FARM_ID, valores: { ph: 5.0 } }),
+      })
+    )
+
+    expect(state.payload).toEqual(
+      expect.objectContaining({ image_url: null })
+    )
+  })
+
+  it('rechaza image_url como string vacío', async () => {
+    const { supabase } = makeSupabaseMock()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+
+    const res = await POST(
+      new Request('http://localhost/api/suelo/interpretar', {
+        method: 'POST',
+        body: JSON.stringify({ farm_id: FARM_ID, image_url: '', valores: { ph: 5.0 } }),
+      })
+    )
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/image_url/i)
+  })
+
   it('mapea error de BD a mensaje amigable', async () => {
     const { supabase } = makeSupabaseMock({
       insertError: {

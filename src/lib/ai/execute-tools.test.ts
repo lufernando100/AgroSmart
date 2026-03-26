@@ -1,19 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const mockPricesQuery = {
+  eq: vi.fn(),
+  order: vi.fn(),
+  limit: vi.fn(),
+}
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        }),
-      }),
-      insert: () => ({
+    from: (table: string) => {
+      if (table === 'prices') {
+        mockPricesQuery.eq.mockReturnThis()
+        mockPricesQuery.order.mockReturnThis()
+        mockPricesQuery.limit.mockResolvedValue({ data: [], error: null })
+        return {
+          select: vi.fn().mockReturnValue(mockPricesQuery),
+        }
+      }
+      return {
         select: () => ({
-          maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'soil-1' }, error: null }),
+          eq: () => ({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
         }),
-      }),
-    }),
+        insert: () => ({
+          select: () => ({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'soil-1' }, error: null }),
+          }),
+        }),
+      }
+    },
   }),
 }))
 
@@ -157,6 +173,78 @@ describe('ejecutarTool', () => {
       }
       expect(data.analisis_id).toBe('soil-1')
       expect(data.recomendacion.grade).toBe('23-4-20-3-4')
+    })
+  })
+
+  describe('comparar_precios', () => {
+    const PRODUCT_UUID = 'dddddddd-0000-4000-8000-000000000001'
+
+    it('retorna error con producto_id inválido (no UUID)', async () => {
+      const result = await ejecutarTool({
+        name: 'comparar_precios',
+        input: { producto_id: 'not-a-uuid', caficultor_id: 'caf-123' },
+        contexto: CONTEXTO,
+      })
+      expect((result.result as { error: string }).error).toMatch(/inválido/i)
+    })
+
+    it('retorna lista vacía con mensaje cuando no hay almacenes', async () => {
+      mockPricesQuery.limit.mockResolvedValueOnce({ data: [], error: null })
+
+      const result = await ejecutarTool({
+        name: 'comparar_precios',
+        input: { producto_id: PRODUCT_UUID, caficultor_id: 'caf-123' },
+        contexto: CONTEXTO,
+      })
+      const data = result.result as { almacenes: unknown[]; mensaje: string }
+      expect(data.almacenes).toHaveLength(0)
+      expect(data.mensaje).toMatch(/disponible/i)
+    })
+
+    it('devuelve almacenes ordenados cuando hay resultados', async () => {
+      mockPricesQuery.limit.mockResolvedValueOnce({
+        data: [
+          {
+            unit_price: 150000,
+            warehouse_id: 'wh-1',
+            stock: 50,
+            warehouses: { name: 'Almacén Barato', municipality: 'Manizales' },
+          },
+          {
+            unit_price: 180000,
+            warehouse_id: 'wh-2',
+            stock: 10,
+            warehouses: { name: 'Almacén Caro', municipality: 'Pereira' },
+          },
+        ],
+        error: null,
+      })
+
+      const result = await ejecutarTool({
+        name: 'comparar_precios',
+        input: { producto_id: PRODUCT_UUID, caficultor_id: 'caf-123' },
+        contexto: CONTEXTO,
+      })
+      const data = result.result as {
+        almacenes: Array<{ name: string; unit_price: number }>
+      }
+      expect(data.almacenes).toHaveLength(2)
+      expect(data.almacenes[0].name).toBe('Almacén Barato')
+      expect(data.almacenes[0].unit_price).toBe(150000)
+    })
+
+    it('retorna error cuando la BD falla', async () => {
+      mockPricesQuery.limit.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'connection error' },
+      })
+
+      const result = await ejecutarTool({
+        name: 'comparar_precios',
+        input: { producto_id: PRODUCT_UUID, caficultor_id: 'caf-123' },
+        contexto: CONTEXTO,
+      })
+      expect((result.result as { error: string }).error).toMatch(/precios/i)
     })
   })
 

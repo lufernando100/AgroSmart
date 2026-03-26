@@ -14,6 +14,12 @@ function needsPageAuth(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
+/** Returns active_role if set (role-switch), otherwise falls back to role */
+function resolveRole(metadata: Record<string, unknown> | undefined): string | undefined {
+  const active = metadata?.active_role as string | undefined
+  return active || (metadata?.role as string | undefined)
+}
+
 function defaultHomeForMetadata(role: string | undefined): string {
   if (role === 'warehouse' || role === 'admin') return '/almacen/dashboard'
   return '/catalogo'
@@ -56,7 +62,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login') {
     if (user) {
       const nextParam = request.nextUrl.searchParams.get('next')
-      const role = user.user_metadata?.role as string | undefined
+      const role = resolveRole(user.user_metadata)
       const fallback = defaultHomeForMetadata(role)
       const target =
         nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
@@ -74,14 +80,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (pathname === '/almacen' || pathname.startsWith('/almacen/'))) {
-    const role = user.user_metadata?.role as string | undefined
+    const role = resolveRole(user.user_metadata)
     if (role !== 'warehouse' && role !== 'admin') {
       return NextResponse.redirect(new URL('/catalogo', request.url))
     }
   }
 
   if (user && needsPageAuth(pathname) && !pathname.startsWith('/almacen')) {
-    const role = user.user_metadata?.role as string | undefined
+    const role = resolveRole(user.user_metadata)
     if (role === 'warehouse') {
       return NextResponse.redirect(new URL('/almacen/dashboard', request.url))
     }

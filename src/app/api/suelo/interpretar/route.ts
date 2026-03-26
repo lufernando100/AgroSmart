@@ -75,6 +75,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'plot_id inválido.' }, { status: 400 })
     }
 
+    const imageUrl = json.image_url
+    if (imageUrl !== undefined && (typeof imageUrl !== 'string' || !imageUrl.trim())) {
+      return NextResponse.json({ error: 'image_url inválido.' }, { status: 400 })
+    }
+
     const values = parseValues(json.valores)
     if (!values) {
       return NextResponse.json(
@@ -98,6 +103,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       farm_id: farmId,
       plot_id: plotId ?? null,
+      image_url: typeof imageUrl === 'string' ? imageUrl.trim() : null,
       input_channel: 'pwa',
       ph: values.ph ?? null,
       organic_matter: values.materia_organica ?? null,

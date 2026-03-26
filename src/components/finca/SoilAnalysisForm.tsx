@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { FlaskConical } from 'lucide-react'
+import { useRef, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { FlaskConical, Camera } from 'lucide-react'
 import { MensajeError } from '@/components/ui/MensajeError'
 import { MensajeVacio } from '@/components/ui/MensajeVacio'
 
@@ -23,16 +24,39 @@ type ApiSuccess = {
 
 type ApiError = { error?: string }
 
+type OcrSuccess = {
+  values: Record<string, number>
+  image_url: string | null
+}
+
 const FIELDS = [
   { key: 'ph', label: 'pH' },
   { key: 'materia_organica', label: 'Materia orgánica (%)' },
   { key: 'fosforo', label: 'Fósforo (mg/kg)' },
   { key: 'potasio', label: 'Potasio (cmol/kg)' },
+  { key: 'calcio', label: 'Calcio (cmol/kg)' },
   { key: 'magnesio', label: 'Magnesio (cmol/kg)' },
+  { key: 'aluminio', label: 'Aluminio (cmol/kg)' },
   { key: 'azufre', label: 'Azufre (mg/kg)' },
+  { key: 'hierro', label: 'Hierro (mg/kg)' },
+  { key: 'cobre', label: 'Cobre (mg/kg)' },
+  { key: 'manganeso', label: 'Manganeso (mg/kg)' },
+  { key: 'zinc', label: 'Zinc (mg/kg)' },
+  { key: 'boro', label: 'Boro (mg/kg)' },
+  { key: 'cice', label: 'CICE (cmol/kg)' },
 ] as const
 
+const NIVEL_COLORS: Record<string, string> = {
+  bajo: 'text-red-600 font-medium',
+  medio: 'text-amber-500 font-medium',
+  alto: 'text-green-700 font-medium',
+}
+
+type PhotoState = 'idle' | 'uploading' | 'done' | 'error'
+
 export function SoilAnalysisForm() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [farmId, setFarmId] = useState('')
   const [plotId, setPlotId] = useState('')
   const [values, setValues] = useState<Record<string, string>>({})
@@ -40,12 +64,68 @@ export function SoilAnalysisForm() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ApiSuccess | null>(null)
 
+  const [photoState, setPhotoState] = useState<PhotoState>('idle')
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+
   const canSubmit = useMemo(() => {
     return farmId.trim().length > 0
   }, [farmId])
 
   const handleChangeValue = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function handlePhotoButtonClick() {
+    fileInputRef.current?.click()
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setPhotoError(null)
+    setPhotoState('uploading')
+
+    // Show preview
+    const previewUrl = URL.createObjectURL(file)
+    setPhotoPreview(previewUrl)
+
+    try {
+      const base64 = await fileToBase64(file)
+      const mediaType = normalizeMediaType(file.type)
+
+      const response = await fetch('/api/suelo/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, media_type: mediaType }),
+      })
+      const data = (await response.json()) as OcrSuccess | ApiError
+      if (!response.ok) {
+        setPhotoState('error')
+        setPhotoError(
+          (data as ApiError).error ??
+            'No pudimos leer los valores del análisis. Ingrésalos manualmente.'
+        )
+        return
+      }
+      const ocr = data as OcrSuccess
+      // Pre-fill form fields with extracted values
+      const newValues: Record<string, string> = {}
+      for (const [key, val] of Object.entries(ocr.values)) {
+        newValues[key] = String(val)
+      }
+      setValues((prev) => ({ ...prev, ...newValues }))
+      setImageUrl(ocr.image_url)
+      setPhotoState('done')
+    } catch {
+      setPhotoState('error')
+      setPhotoError('No pudimos procesar la foto. Ingrésalos manualmente.')
+    } finally {
+      // Reset file input so the same file can be re-selected if needed
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -82,6 +162,7 @@ export function SoilAnalysisForm() {
         body: JSON.stringify({
           farm_id: farmId.trim(),
           plot_id: plotId.trim() || undefined,
+          image_url: imageUrl ?? undefined,
           valores: parsedValues,
         }),
       })
@@ -107,8 +188,47 @@ export function SoilAnalysisForm() {
       >
         <h2 className="text-lg font-semibold text-[#252320]">Análisis de suelo</h2>
         <p className="mt-1 text-sm text-[#736E64]">
-          Ingresa los valores del laboratorio para obtener la recomendación.
+          Sube la foto del laboratorio o ingresa los valores manualmente.
         </p>
+
+        {/* Photo upload */}
+        <div className="mt-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            className="hidden"
+            onChange={handleFileChange}
+            aria-label="Subir foto del análisis de suelo"
+          />
+          <button
+            type="button"
+            onClick={handlePhotoButtonClick}
+            disabled={photoState === 'uploading'}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#A8D1A8] bg-[#F4FAF4] py-3 text-sm font-medium text-[#2D7A2D] disabled:opacity-60"
+          >
+            <Camera size={18} aria-hidden="true" />
+            {photoState === 'uploading'
+              ? 'Analizando tu suelo...'
+              : photoState === 'done'
+                ? 'Foto cargada — toca para cambiar'
+                : 'Subir foto del análisis'}
+          </button>
+
+          {photoPreview && (
+            <div className="mt-2 overflow-hidden rounded-xl border border-[#E8E4DD]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photoPreview}
+                alt="Vista previa del análisis de suelo"
+                className="max-h-40 w-full object-contain"
+              />
+            </div>
+          )}
+
+          {photoError && <MensajeError message={photoError} />}
+        </div>
 
         <div className="mt-4 grid gap-3">
           <label className="grid gap-1">
@@ -176,24 +296,52 @@ export function SoilAnalysisForm() {
                   <tr key={row.nutriente} className="border-t border-[#F0EDE7] text-[#3A3732]">
                     <td className="py-2">{row.nutriente}</td>
                     <td className="py-2">{row.valor}</td>
-                    <td className="py-2 capitalize">{row.nivel}</td>
+                    <td className={`py-2 capitalize ${NIVEL_COLORS[row.nivel] ?? ''}`}>
+                      {row.nivel}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <p className="mt-3 text-sm text-[#3A3732]">
-            Ver precios de este fertilizante: <strong>{result.recommendation.suggestedProductSearch}</strong>
-          </p>
+          <Link
+            href={`/catalogo?q=${encodeURIComponent(result.recommendation.suggestedProductSearch)}`}
+            className="mt-4 flex h-12 w-full items-center justify-center rounded-xl border border-[#2D7A2D] text-sm font-semibold text-[#2D7A2D]"
+          >
+            Ver precios de {result.recommendation.suggestedProductSearch}
+          </Link>
         </article>
       ) : (
         <MensajeVacio
           Icon={FlaskConical}
           title="Aún no has interpretado un análisis"
-          description="Completa el formulario para ver el semáforo de nutrientes y la recomendación."
+          description="Sube la foto del laboratorio o completa el formulario para ver el semáforo de nutrientes y la recomendación."
         />
       )}
     </section>
   )
+}
+
+// --- Helpers ---
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      // Strip "data:image/jpeg;base64," prefix
+      const base64 = result.split(',')[1]
+      if (base64) resolve(base64)
+      else reject(new Error('No se pudo leer el archivo.'))
+    }
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function normalizeMediaType(type: string): string {
+  if (type === 'image/png') return 'image/png'
+  if (type === 'image/webp') return 'image/webp'
+  return 'image/jpeg'
 }
