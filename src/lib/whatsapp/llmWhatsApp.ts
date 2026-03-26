@@ -53,7 +53,8 @@ export async function runLLMParaWhatsApp(params: {
   textoUsuario: string
 }): Promise<string> {
   const modelProvider = process.env.LLM_PROVIDER || 'anthropic' // 'anthropic', 'google', 'openai', 'deepseek', 'xai', etc
-  const modelName = process.env.LLM_MODEL || 'claude-3-5-sonnet-20241022' // The specific model string
+  // Default actualizado: claude-3-5-sonnet-20241022 ya no está disponible en la API.
+  const modelName = process.env.LLM_MODEL || 'claude-sonnet-4-20250514'
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let model: any;

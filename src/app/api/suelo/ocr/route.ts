@@ -120,9 +120,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Servicio de análisis no configurado.' }, { status: 500 })
     }
 
+    // Anthropic retira modelos antiguos; usar Sonnet 4+ con visión (ver docs de modelos).
+    const ocrModel =
+      process.env.ANTHROPIC_OCR_MODEL?.trim() || 'claude-sonnet-4-20250514'
+
     const anthropic = new Anthropic({ apiKey })
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: ocrModel,
       max_tokens: 512,
       messages: [
         {
