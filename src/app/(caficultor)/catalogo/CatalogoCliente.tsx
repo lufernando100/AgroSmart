@@ -13,8 +13,6 @@ type Props = {
   categories: { id: string; name: string; sort_order: number }[]
   products: ProductSummary[]
   activeCategoryId: string | null
-  /** Initial search query pre-filled from ?q= URL parameter */
-  initialSearch?: string
   /** Best price per product keyed by product id (used for QuickAdd) */
   bestPricesByProduct?: Record<
     string,
@@ -70,10 +68,9 @@ export function CatalogoCliente({
   categories,
   products,
   activeCategoryId,
-  initialSearch = '',
   bestPricesByProduct = {},
 }: Props) {
-  const [search, setSearch] = useState(initialSearch)
+  const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(activeCategoryId)
 
   const filteredProducts = useMemo(() => {
