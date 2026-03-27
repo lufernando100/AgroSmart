@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { CatalogoCliente } from './CatalogoCliente'
 import type { ProductSummary } from '@/lib/catalogo/queries'
 
@@ -32,8 +32,8 @@ const PRODUCTS: ProductSummary[] = [
   },
 ]
 
-describe('CatalogoCliente — initialSearch', () => {
-  it('muestra todos los productos cuando no hay initialSearch', () => {
+describe('CatalogoCliente — búsqueda', () => {
+  it('muestra todos los productos al inicio', () => {
     render(
       <CatalogoCliente
         categories={CATEGORIES}
@@ -46,33 +46,32 @@ describe('CatalogoCliente — initialSearch', () => {
     expect(screen.getByText('Glifosato Roundup')).toBeInTheDocument()
   })
 
-  it('filtra productos con initialSearch pre-llenado', () => {
+  it('filtra productos cuando el usuario escribe en búsqueda', () => {
     render(
       <CatalogoCliente
         categories={CATEGORIES}
         products={PRODUCTS}
         activeCategoryId={null}
-        initialSearch="26-4-22"
       />
     )
+    const searchInput = screen.getByRole('searchbox') as HTMLInputElement
+    fireEvent.change(searchInput, { target: { value: '26-4-22' } })
 
     expect(screen.getByText('Fertilizante 26-4-22')).toBeInTheDocument()
     expect(screen.queryByText('Glifosato Roundup')).not.toBeInTheDocument()
   })
 
-  it('el campo de búsqueda tiene el valor de initialSearch', () => {
+  it('el campo de búsqueda inicia vacío por defecto', () => {
     render(
       <CatalogoCliente
         categories={CATEGORIES}
         products={PRODUCTS}
         activeCategoryId={null}
-        initialSearch="26-4-22"
       />
     )
 
-    // Input has type="search" → ARIA role is "searchbox"
     const searchInput = screen.getByRole('searchbox') as HTMLInputElement
-    expect(searchInput.value).toBe('26-4-22')
+    expect(searchInput.value).toBe('')
   })
 
   it('funciona correctamente sin initialSearch (por defecto vacío)', () => {
@@ -88,15 +87,16 @@ describe('CatalogoCliente — initialSearch', () => {
     expect(searchInput.value).toBe('')
   })
 
-  it('muestra estado vacío cuando initialSearch no coincide con ningún producto', () => {
+  it('muestra estado vacío cuando búsqueda no coincide con ningún producto', () => {
     render(
       <CatalogoCliente
         categories={CATEGORIES}
         products={PRODUCTS}
         activeCategoryId={null}
-        initialSearch="xyz-inexistente"
       />
     )
+    const searchInput = screen.getByRole('searchbox') as HTMLInputElement
+    fireEvent.change(searchInput, { target: { value: 'xyz-inexistente' } })
 
     expect(screen.queryByText('Fertilizante 26-4-22')).not.toBeInTheDocument()
     expect(screen.queryByText('Glifosato Roundup')).not.toBeInTheDocument()

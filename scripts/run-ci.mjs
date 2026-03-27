@@ -33,6 +33,11 @@ run('ESLint', 'npx', ['eslint', '.', '--max-warnings', '0'])
 run('TypeScript', 'npm', ['run', 'typecheck'])
 run('Vitest', 'npm', ['run', 'test'])
 run('Next.js build', 'npm', ['run', 'build'])
-run('Playwright E2E', 'npm', ['run', 'test:e2e'], { CI: 'true' })
+run('Playwright E2E', 'npm', ['run', 'test:e2e'], {
+  CI: 'true',
+  // Force non-interactive mode even if local terminal has debug vars
+  PWDEBUG: '0',
+  PLAYWRIGHT_UI: '0',
+})
 
 console.log('\n━━ CI local: todo OK (paridad con GitHub Actions) ━━\n')
