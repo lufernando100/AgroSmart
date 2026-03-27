@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SoilInputValues } from '@/lib/suelo/interpretation'
+import {
+  extractSoilOcrRawText,
+  friendlySoilOcrError,
+  resolveAnthropicApiKey,
+  resolveGoogleApiKeyForOcr,
+  resolveSoilOcrModel,
+  resolveSoilOcrProvider,
+} from '@/lib/suelo/ocr-extract'
 
 const VALID_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
 type ValidMediaType = (typeof VALID_MEDIA_TYPES)[number]
@@ -32,35 +39,7 @@ const NUTRIENT_KEYS: (keyof SoilInputValues)[] = [
   'cice',
 ]
 
-const EXTRACTION_PROMPT = `You are analyzing a soil analysis laboratory report image from Colombia.
-Extract ALL nutrient values visible in the report.
-Return ONLY a valid JSON object with these exact keys (omit keys not present in the image):
-{
-  "ph": number,
-  "materia_organica": number,
-  "fosforo": number,
-  "potasio": number,
-  "calcio": number,
-  "magnesio": number,
-  "aluminio": number,
-  "azufre": number,
-  "hierro": number,
-  "cobre": number,
-  "manganeso": number,
-  "zinc": number,
-  "boro": number,
-  "cice": number
-}
-Rules:
-- Values must be numbers only (no units, no strings).
-- "materia_organica" is the organic matter percentage.
-- "fosforo" (phosphorus) may appear as "P", "Fósforo", or "Phosphorus".
-- "cice" is the cation exchange capacity (CIC, CICE, CEC).
-- If a nutrient is not in the report, omit that key entirely.
-- Return ONLY the JSON object — no explanation, no markdown, no code fences.`
-
 function parseSoilJson(text: string): SoilInputValues | null {
-  // Strip markdown code fences if model adds them
   const cleaned = text.replace(/```[a-z]*\n?/gi, '').trim()
   let parsed: unknown
   try {
@@ -114,43 +93,37 @@ export async function POST(request: Request) {
       )
     }
 
-    // Call Claude Vision to extract nutrient values
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Servicio de análisis no configurado.' }, { status: 500 })
+    const provider = resolveSoilOcrProvider()
+    const ocrModel = resolveSoilOcrModel(provider)
+
+    if (provider === 'anthropic' && !resolveAnthropicApiKey()) {
+      return NextResponse.json(
+        { error: 'Servicio de análisis no configurado.' },
+        { status: 500 }
+      )
+    }
+    if (provider === 'google' && !resolveGoogleApiKeyForOcr()) {
+      return NextResponse.json(
+        { error: 'Servicio de análisis no configurado.' },
+        { status: 500 }
+      )
     }
 
-    // Anthropic retira modelos antiguos; usar Sonnet 4+ con visión (ver docs de modelos).
-    const ocrModel =
-      process.env.ANTHROPIC_OCR_MODEL?.trim() || 'claude-sonnet-4-20250514'
+    let responseText: string
+    try {
+      responseText = await extractSoilOcrRawText({
+        provider,
+        model: ocrModel,
+        imageBase64: image,
+        mediaType: media_type,
+      })
+    } catch (e) {
+      return NextResponse.json(
+        { error: friendlySoilOcrError(e) },
+        { status: 500 }
+      )
+    }
 
-    const anthropic = new Anthropic({ apiKey })
-    const message = await anthropic.messages.create({
-      model: ocrModel,
-      max_tokens: 512,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type,
-                data: image,
-              },
-            },
-            {
-              type: 'text',
-              text: EXTRACTION_PROMPT,
-            },
-          ],
-        },
-      ],
-    })
-
-    const responseText =
-      message.content[0]?.type === 'text' ? message.content[0].text : ''
     const values = parseSoilJson(responseText)
     if (!values) {
       return NextResponse.json(
@@ -162,7 +135,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Upload image to Supabase Storage
     let imageUrl: string | null = null
     try {
       const buffer = Buffer.from(image, 'base64')
@@ -184,7 +156,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ values, image_url: imageUrl })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Error procesando la imagen.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json(
+      { error: friendlySoilOcrError(e) },
+      { status: 500 }
+    )
   }
 }

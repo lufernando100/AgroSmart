@@ -14,6 +14,7 @@
 - **smoke.spec.ts**: home y `/login` cargan y muestran controles esperados.
 - **auth-redirects.spec.ts**: sin sesión, `/catalogo`, detalle de producto y `/almacen/dashboard` redirigen a `/login?next=…`.
 - **dev-flujos.spec.ts**: `/dev/flujos` (guía de flujos; en build de producción responde 404).
+- **soil-analysis-flow.spec.ts**: `/dev/e2e/soil-analysis` (subir foto -> OCR mock -> interpretar mock -> deep-link a catálogo).
 
 No incluyen **login con OTP** (depende de Twilio/Supabase en vivo). Para grabar un flujo autenticado:
 

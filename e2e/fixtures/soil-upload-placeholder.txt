@@ -1,0 +1,3 @@
+This is a non-image placeholder used by Playwright.
+We intercept /api/suelo/ocr and /api/suelo/interpretar, so the server does not depend on real image bytes.
+

@@ -1,14 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // vi.hoisted runs BEFORE any imports, so the reference is valid inside vi.mock factories
-const { mockMessagesCreate } = vi.hoisted(() => ({
+const { mockMessagesCreate, mockGenerateContent } = vi.hoisted(() => ({
   mockMessagesCreate: vi.fn(),
+  mockGenerateContent: vi.fn(),
 }))
 
 vi.mock('@anthropic-ai/sdk', () => ({
   // Must use regular function (not arrow) so it can be called with `new`
   default: vi.fn().mockImplementation(function () {
     return { messages: { create: mockMessagesCreate } }
+  }),
+}))
+
+vi.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: vi.fn().mockImplementation(function () {
+    return {
+      getGenerativeModel: vi.fn().mockReturnValue({
+        generateContent: mockGenerateContent,
+      }),
+    }
   }),
 }))
 
@@ -60,6 +71,7 @@ function makeAdminMock(opts?: { uploadError?: boolean }) {
 describe('POST /api/suelo/ocr', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
     vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
   })
 
@@ -224,5 +236,49 @@ describe('POST /api/suelo/ocr', () => {
 
       expect(res.status).toBe(200)
     }
+  })
+
+  it('retorna 500 si SOIL_OCR_PROVIDER=google y no hay clave de Google', async () => {
+    vi.stubEnv('SOIL_OCR_PROVIDER', 'google')
+    vi.stubEnv('GOOGLE_API_KEY', '')
+    vi.stubEnv('GEMINI_API_KEY', '')
+    vi.stubEnv('LLM_API_KEY', '')
+    vi.mocked(createClient).mockResolvedValue(makeSupabaseMock() as never)
+
+    const res = await POST(
+      new Request('http://localhost/api/suelo/ocr', {
+        method: 'POST',
+        body: JSON.stringify({ image: FAKE_IMAGE_B64, media_type: 'image/jpeg' }),
+      })
+    )
+
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toMatch(/configurado/i)
+  })
+
+  it('usa Gemini cuando SOIL_OCR_PROVIDER=google y hay GOOGLE_API_KEY', async () => {
+    vi.stubEnv('SOIL_OCR_PROVIDER', 'google')
+    vi.stubEnv('GOOGLE_API_KEY', 'test-google')
+    vi.mocked(createClient).mockResolvedValue(makeSupabaseMock() as never)
+    vi.mocked(createAdminClient).mockReturnValue(makeAdminMock() as never)
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => '{"ph": 5.2, "fosforo": 18}',
+      },
+    })
+
+    const res = await POST(
+      new Request('http://localhost/api/suelo/ocr', {
+        method: 'POST',
+        body: JSON.stringify({ image: FAKE_IMAGE_B64, media_type: 'image/jpeg' }),
+      })
+    )
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.values).toEqual({ ph: 5.2, fosforo: 18 })
+    expect(mockGenerateContent).toHaveBeenCalled()
+    expect(mockMessagesCreate).not.toHaveBeenCalled()
   })
 })

@@ -54,35 +54,37 @@ Cada hito conecta funcionalidades con un KPI de negocio medible.
 ## REFACTORINGS PREVENTIVOS
 > Hacer ANTES de Fase 1.7 para evitar retrabajo costoso después
 
-### R1 Multi-rol usuario [Esfuerzo: M]
+### R1 Multi-rol usuario [Esfuerzo: M] — ✅
 > Bloquea: middleware, RLS, UI de almacén, onboarding
 > Si se hace después: toca auth, middleware, RLS policies, UI — cada feature nueva multiplica el costo
 
-- ⏳ Crear tabla `user_roles(user_id, role, is_active, created_at)` — migración SQL
-- ⏳ Migrar datos existentes: insertar un registro en `user_roles` por cada usuario según su `role` actual
-- ⏳ Agregar `active_role` al JWT o a `user_metadata` en Supabase Auth
-- ⏳ Ajustar middleware (`src/middleware.ts`) para leer `active_role` en vez de `role` fijo
-- ⏳ Ajustar RLS policies en BD para usar `user_roles` en vez de campo `role` directo
-- ⏳ UI: selector de rol si el usuario tiene más de uno (dropdown en sidebar/header)
-- ⏳ Tests: middleware multi-rol, RLS con ambos roles, switch de rol
+- ✅ Crear tabla `user_roles(user_id, role, is_active, created_at)` — `database/13_user_roles.sql`
+- ✅ Migrar datos existentes: `INSERT INTO user_roles SELECT id, role FROM usuarios ON CONFLICT DO NOTHING`
+- ✅ Función `get_my_active_role()` en BD — lee `active_role` de user_metadata o cae a `role` o a `user_roles`
+- ✅ `PATCH /api/auth/role` — cambia `active_role` en user_metadata vía admin client; valida contra `user_roles`
+- ✅ Middleware (`src/middleware.ts`) — `resolveRole()` lee `active_role` primero, fallback a `role`
+- ✅ Tipo `UserRoles` en `src/types/database.ts`
+- ⏳ UI: selector de rol si el usuario tiene más de uno (dropdown en sidebar/header) — pendiente para cuando haya usuarios multi-rol reales
+- ⏳ Ajustar RLS policies en BD para usar `get_my_active_role()` — pendiente; actuales leen de user_metadata.role que es compatible
+- ⏳ Tests: middleware multi-rol, switch de rol API
 
-### R2 Tipos Supabase auto-generados [Esfuerzo: S]
+### R2 Tipos Supabase auto-generados [Esfuerzo: S] — ✅
 > Bloquea: cualquier tabla nueva amplía la brecha tipos manuales vs esquema real
 
-- ⏳ Ejecutar `supabase gen types typescript --local > src/types/supabase.ts`
-- ⏳ Reemplazar tipos manuales de `src/types/database.ts` con imports del archivo generado
-- ⏳ Mantener `database.ts` solo para tipos de negocio derivados (no tablas directas)
-- ⏳ Documentar en CLAUDE.md el comando de regeneración
+- ✅ `src/types/supabase.ts` generado desde proyecto remoto (`--project-id faxcioyvwviexsgrtqjz`)
+- ✅ 10 enums en `database.ts` ahora son aliases de `Database['public']['Enums']` (fuente única de verdad)
+- ✅ Interfaces de negocio (User, Farm, Order, etc.) permanecen en `database.ts` como tipos ergonómicos
+- ✅ Comando documentado en el propio `database.ts`: `SUPABASE_ACCESS_TOKEN=<token> npx supabase gen types typescript --project-id faxcioyvwviexsgrtqjz > src/types/supabase.ts`
 
-### R3 Modularizar execute-tools.ts [Esfuerzo: S]
+### R3 Modularizar execute-tools.ts [Esfuerzo: S] — ✅
 > Bloquea: implementación de las 7 tools restantes
 > Si se hace después: archivo monolítico con 11 tools, difícil de testear y mantener
 
-- ⏳ Crear directorio `src/lib/ai/tools/`
-- ⏳ Extraer cada tool a su archivo: `buscar-productos.ts`, `crear-pedido.ts`, `notificar-almacen.ts`, `interpretar-suelo.ts`
-- ⏳ Crear `src/lib/ai/tools/registry.ts` con patrón registry: `Record<string, ToolHandler>`
-- ⏳ Simplificar `execute-tools.ts` a un dispatcher que llama al registry
-- ⏳ Tests existentes deben seguir pasando sin cambios
+- ✅ Directorio `src/lib/ai/tools/` creado
+- ✅ `buscar-productos.ts`, `crear-pedido.ts`, `notificar-almacen.ts`, `interpretar-suelo.ts`
+- ✅ `src/lib/ai/tools/registry.ts` — `Record<string, ToolHandler>`, tipos `ToolContext` y `ToolHandler`
+- ✅ `execute-tools.ts` reducido a 12 líneas (dispatcher puro)
+- ✅ 138 tests pasan sin cambios
 
 ### R4 API pedidos multi-ítem [Esfuerzo: S] — ✅
 > Bloquea: carrito (1.7), chat PWA (4.1), pools (4.3)
@@ -682,6 +684,42 @@ Las 11 tools definidas en `docs/02_system_prompt_tools.ts`. Estado en `src/lib/a
 
 ---
 
+## FASE 7 — Marketplace Completo (POR DEFINIR)
+> **No bloquea el plan actual.** Implementar solo después de validar con 50+ pedidos reales.
+> La arquitectura actual soporta estas expansiones sin refactor mayor (`orders.metadata` JSONB, patrón de webhooks existente, estados de pedido extensibles).
+
+### 7.1 Pagos en línea — ⏳ POR DEFINIR [Esfuerzo estimado: 5-7 sem]
+> Decisiones requeridas antes de implementar:
+> - ¿Pasarela: Wompi Marketplace, MercadoPago o Stripe? (Wompi preferida por split payment nativo en Colombia)
+> - ¿Split payment automático (almacén recibe precio - comisión) o cobro de comisión separado mensual?
+> - ¿El pago ocurre antes o después de la confirmación del almacén?
+> - ¿Qué métodos acepta el caficultor? (tarjeta, Nequi, Daviplata, PSE) — muchos no tienen tarjeta
+> - Link de pago por WhatsApp (canal principal de la plataforma)
+>
+> Notas técnicas: `orders.metadata` JSONB absorbe `payment_status`, `payment_reference`, `paid_at` sin migración destructiva.
+> Riesgo regulatorio: manejar dinero de terceros puede requerir cumplir normativa Superfinanciera.
+
+### 7.2 Programación y seguimiento de entregas — ⏳ POR DEFINIR [Esfuerzo estimado: 2-3 sem básico / 6-8 sem con logística]
+> Decisiones requeridas antes de implementar:
+> - ¿Quién paga el flete? ¿El caficultor, el almacén, o compartido?
+> - Métodos soportados: recoge en tienda / envío a finca / punto intermedio
+> - ¿Integrar con carriers externos (Coordinadora, Servientrega) o solo gestión interna?
+>
+> Quick wins (bajo riesgo): método de entrega + fecha preferida en checkout + estado `ready_for_pickup` + notificación WhatsApp.
+> Notas técnicas: columnas `delivery_method`, `scheduled_delivery_date`, `delivery_address` en `orders`. Depende de 2.2 (GPS finca) para dirección exacta.
+
+### 7.3 Integración CRM / ERP del almacén — ⏳ POR DEFINIR [Esfuerzo: 2 sem base + 3-4 sem por conector]
+> Decisiones requeridas antes de implementar:
+> - Validar demanda: ¿cuántos almacenes objetivo tienen CRM? (probablemente pocos en este segmento)
+>
+> Quick wins (implementar primero, sin depender de decisiones):
+> - Webhooks salientes por evento (pedido nuevo/confirmado/entregado) → Zapier/Make
+> - Import/Export CSV de precios y pedidos
+>
+> Riesgo alto: conectores específicos (Siigo, Alegra, World Office) son deuda de mantenimiento permanente — no construir hasta validar demanda real.
+
+---
+
 ## BLOQUEADOS
 > Tareas que no pueden avanzar por alguna dependencia externa
 
@@ -721,3 +759,4 @@ _Ninguno por ahora._
 | 2026-03-24 | Decisión de negocio: Se aprueba el desarrollo del Hito 1.7 "Carrito de Compras multi-ítem" para la PWA. El pago seguirá siendo offline directo al almacén. AgroSmart cobrará comisión mensual post-entrega. |
 | 2026-03-24 | PLAN.md expandido: 6 fases + refactorings preventivos (R1-R4) + hitos de valor (H1-H10) + tracker de 11 tools AI + estimaciones de esfuerzo. Visión completa de producto, no solo MVP. |
 | 2026-03-24 | R4 + 1.7 implementados: `createOrdersForFarmer`, `POST /api/pedidos` con `grand_total` + respuesta `orders[]`, Zustand `src/lib/cart/store.ts`, `/carrito`, QuickAdd → carrito, WhatsApp con líneas por producto. Dependencia `zustand`. |
+| 2026-03-25 | Análisis de scope ampliado: pagos en línea, entregas programadas e integración CRM evaluados. Decisión: no bloquean el plan actual. Añadida Fase 7 como "por definir" hasta validar con 50+ pedidos reales. Ver análisis de riesgos en Fase 7. |
