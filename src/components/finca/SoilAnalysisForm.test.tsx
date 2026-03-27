@@ -283,7 +283,7 @@ describe('SoilAnalysisForm', () => {
         this.result = MOCK_DATA_URL
         this.onload = null
         this.onerror = null
-        this.readAsDataURL = (_file: File) => {
+        this.readAsDataURL = () => {
           // Defer to let fileToBase64 set this.onload first
           setTimeout(() => this.onload?.(), 0)
         }
@@ -330,7 +330,7 @@ describe('SoilAnalysisForm', () => {
         this.result = MOCK_DATA_URL
         this.onload = null
         this.onerror = null
-        this.readAsDataURL = (_file: File) => {
+        this.readAsDataURL = () => {
           setTimeout(() => this.onload?.(), 0)
         }
       })

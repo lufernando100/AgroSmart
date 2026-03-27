@@ -22,8 +22,9 @@ function getWarehouseInfo(w: WarehouseInfo | WarehouseInfo[] | null): WarehouseI
 
 export async function compararPrecios(
   input: Record<string, unknown>,
-  _contexto: ToolContext
+  contexto: ToolContext
 ): Promise<unknown> {
+  void contexto
   const productoId = String(input.producto_id ?? '')
   if (!isUuid(productoId)) {
     return { error: 'producto_id inválido.' }

@@ -3,8 +3,9 @@ import type { ToolContext } from './registry'
 
 export async function buscarProductos(
   input: Record<string, unknown>,
-  _contexto: ToolContext
+  contexto: ToolContext
 ): Promise<unknown> {
+  void contexto
   const termino = String(input.termino_busqueda ?? '')
   if (!termino.trim()) {
     return { error: 'termino_busqueda vacío' }
