@@ -368,6 +368,12 @@ El objetivo es tener un flujo completo de pedido funcionando antes de cualquier 
 - Tipos: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
 - Rama `main` siempre desplegable
 - Features en ramas separadas → Pull Request
+- **No acumular ramas largas:** abrir PR en 24-72h desde crear la rama
+- **Actualizar ramas activas con `main` frecuentemente:** mínimo 1 vez al día si siguen abiertas
+- **No mezclar dominios en una misma rama:** UI/estilos separado de API/servicios/BD
+- **Antes de merge a `main`:** `npm test` + `npm run build` obligatorios
+- **Si un merge abre >5 conflictos o toca APIs críticas inesperadamente:** abortar merge y rehacer integración por partes (cherry-pick de archivos/commits o PRs pequeños)
+- **Regla operativa:** no subir cambios nuevos a producción dejando merges conflictivos pendientes en ramas antiguas
 
 ### Seguridad
 - NUNCA poner API keys en el código

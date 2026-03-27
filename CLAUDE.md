@@ -130,6 +130,14 @@ Estas reglas aplican a **todo código nuevo** que toque formularios, APIs o BD.
 - Todo formulario debe tener tests con inputs inválidos (vacío, muy largo, negativo, tipo incorrecto)
 - Los tests deben verificar que el **mensaje que ve el usuario** es amigable (en español, sin jerga técnica)
 
+### Reglas operativas de Git (obligatorias)
+- Ramas de feature cortas: abrir PR en 24-72h, no dejar ramas largas sin integrar
+- Sincronizar rama activa con `main` al menos 1 vez al día mientras esté abierta
+- Separar alcance por rama: cambios de diseño/UI no se mezclan con API/servicios/BD
+- Antes de merge a `main`: ejecutar `npm test` y `npm run build`
+- Si el merge presenta muchos conflictos o toca archivos críticos fuera del alcance: abortar y rehacer en PRs pequeños
+- No desplegar nuevos cambios dejando merges conflictivos pendientes de ramas antiguas
+
 ### Depuración de auth (ambiente local)
 Si ves `foreign key constraint "pedidos_caficultor_id_fkey"`:
 1. Ve a Supabase → Authentication → Users y copia el UUID del usuario de prueba
