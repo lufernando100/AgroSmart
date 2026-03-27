@@ -25,11 +25,11 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   ])
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-[#FAF7F2]">
       {/* Sticky header with product count */}
-      <header className="sticky top-0 z-30 border-b border-[#E8E4DD] bg-[#FAFAF8] px-4 py-3">
-        <h1 className="text-xl font-bold text-[#252320]">Catálogo</h1>
-        <p className="text-sm text-[#736E64]">
+      <header className="sticky top-0 z-30 border-b border-[#EAE1D9] bg-[#FAF7F2] px-4 py-3">
+        <h1 className="text-xl font-bold text-[#1A0F0A]">Catálogo</h1>
+        <p className="text-sm text-[#7B675B]">
           {products.length} producto{products.length !== 1 ? 's' : ''} disponible{products.length !== 1 ? 's' : ''}
         </p>
       </header>

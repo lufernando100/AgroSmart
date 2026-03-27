@@ -14,8 +14,8 @@ export default async function AlmacenProductosPage() {
 
   return (
     <div className="px-6 py-6">
-      <h1 className="text-2xl font-bold text-[#252320]">Productos y precios</h1>
-      <p className="mt-1 text-sm text-[#736E64]">
+      <h1 className="text-2xl font-bold text-[#1A0F0A]">Productos y precios</h1>
+      <p className="mt-1 text-sm text-[#7B675B]">
         Ajusta precios o marca como agotado. El historial se guarda automáticamente.
       </p>
 

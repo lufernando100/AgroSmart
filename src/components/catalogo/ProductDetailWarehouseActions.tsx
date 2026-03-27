@@ -29,12 +29,12 @@ export function ProductDetailWarehouseActions({
     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <Link
         href={`/catalogo/pedido?producto_id=${productId}&almacen_id=${warehouseId}`}
-        className="flex h-14 flex-1 items-center justify-center rounded-xl border border-[#2D7A2D] bg-white text-base font-semibold text-[#2D7A2D] hover:bg-[#F0F7F0]"
+        className="flex h-14 flex-1 items-center justify-center rounded-xl border border-[#059669] bg-white text-base font-semibold text-[#059669] hover:bg-[#ECFDF5]"
       >
         Pedir con notas
       </Link>
       <div className="flex items-center justify-center gap-2 sm:justify-end">
-        <span className="text-sm text-[#736E64]">Al carrito</span>
+        <span className="text-sm text-[#7B675B]">Al carrito</span>
         <QuickAdd
           productId={productId}
           warehouseId={warehouseId}

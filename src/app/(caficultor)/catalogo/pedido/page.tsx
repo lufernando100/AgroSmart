@@ -16,13 +16,13 @@ export default async function PedidoPage({ searchParams }: PageProps) {
 
   if (!productId || !warehouseId || !isUuid(productId) || !isUuid(warehouseId)) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
-        <p className="text-[#736E64]">
+      <div className="min-h-screen bg-[#FAF7F2] px-4 py-6">
+        <p className="text-[#7B675B]">
           Abre un producto en el catálogo y elige &quot;Pedir aquí&quot; en un almacén.
         </p>
         <Link
           href="/catalogo"
-          className="mt-4 inline-block rounded-xl bg-[#2D7A2D] px-5 py-3 font-semibold text-white"
+          className="mt-4 inline-block rounded-xl bg-[#059669] px-5 py-3 font-semibold text-white"
         >
           Ir al catálogo
         </Link>
@@ -36,13 +36,13 @@ export default async function PedidoPage({ searchParams }: PageProps) {
   const line = product.prices.find((p) => p.warehouse_id === warehouseId)
   if (!line) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
-        <p className="text-[#736E64]">
+      <div className="min-h-screen bg-[#FAF7F2] px-4 py-6">
+        <p className="text-[#7B675B]">
           Este almacén no tiene precio activo para este producto.
         </p>
         <Link
           href={`/catalogo/${productId}`}
-          className="mt-4 inline-block text-[#2D7A2D] underline"
+          className="mt-4 inline-block text-[#059669] underline"
         >
           Volver al producto
         </Link>
@@ -51,18 +51,18 @@ export default async function PedidoPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#E8E4DD] bg-[#FAFAF8] px-4 py-3">
+    <div className="min-h-screen bg-[#FAF7F2]">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#EAE1D9] bg-[#FAF7F2] px-4 py-3">
         <Link
           href={`/catalogo/${productId}`}
           aria-label="Volver al producto"
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5F3EF] text-[#524E46]"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FDFBF7] text-[#5B473D]"
         >
           <ChevronLeft size={20} aria-hidden />
         </Link>
         <div>
-          <p className="text-xs text-[#736E64]">{line.warehouse_name}</p>
-          <h1 className="text-lg font-bold text-[#252320]">Tu pedido</h1>
+          <p className="text-xs text-[#7B675B]">{line.warehouse_name}</p>
+          <h1 className="text-lg font-bold text-[#1A0F0A]">Tu pedido</h1>
         </div>
       </header>
 

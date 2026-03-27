@@ -30,20 +30,20 @@ export function MensajeVacio({
     <div
       className={`flex flex-col items-center gap-4 py-12 text-center ${className}`}
     >
-      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#F5F3EF]">
-        <Icon size={36} className="text-[#D4CEC4]" strokeWidth={1.5} />
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#FDFBF7]">
+        <Icon size={36} className="text-[#2D1B14]" strokeWidth={1.5} />
       </div>
       <div>
-        <p className="text-lg font-semibold text-[#3A3732]">{title}</p>
+        <p className="text-lg font-semibold text-[#3D2F28]">{title}</p>
         {description ? (
-          <p className="mt-1 text-sm text-[#736E64]">{description}</p>
+          <p className="mt-1 text-sm text-[#7B675B]">{description}</p>
         ) : null}
       </div>
       {action ? (
         <button
           type="button"
           onClick={action.onClick}
-          className="rounded-xl bg-[#2D7A2D] px-6 py-3 text-base font-semibold text-white hover:bg-[#236023]"
+          className="rounded-xl bg-[#059669] px-6 py-3 text-base font-semibold text-white hover:bg-[#047857]"
         >
           {action.label}
         </button>

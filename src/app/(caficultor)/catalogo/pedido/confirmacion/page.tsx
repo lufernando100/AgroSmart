@@ -73,11 +73,11 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
     const data = await getOrderForUser(oid, user.id, role)
     if (!data) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
-          <p className="text-[#736E64]">No encontramos uno o más pedidos.</p>
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAF7F2] px-4 text-center">
+          <p className="text-[#7B675B]">No encontramos uno o más pedidos.</p>
           <Link
             href="/catalogo"
-            className="rounded-xl bg-[#2D7A2D] px-5 py-3 font-semibold text-white"
+            className="rounded-xl bg-[#059669] px-5 py-3 font-semibold text-white"
           >
             Ir al catálogo
           </Link>
@@ -138,16 +138,16 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
   const plural = loaded.length > 1
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
+    <div className="min-h-screen bg-[#FAF7F2] px-4 py-6">
       <div className="mx-auto max-w-lg">
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D4E8D4]">
-            <CheckCircle2 size={36} className="text-[#2D7A2D]" strokeWidth={1.5} />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D1FAE5]">
+            <CheckCircle2 size={36} className="text-[#059669]" strokeWidth={1.5} />
           </div>
-          <h1 className="text-2xl font-bold text-[#252320]">
+          <h1 className="text-2xl font-bold text-[#1A0F0A]">
             {plural ? '¡Pedidos enviados!' : '¡Pedido enviado!'}
           </h1>
-          <p className="text-sm text-[#736E64]">
+          <p className="text-sm text-[#7B675B]">
             {plural
               ? 'Te avisamos por WhatsApp cuando cada almacén confirme, si el servicio está activo. También podés ver el estado abajo o volver más tarde: se actualiza solo.'
               : 'Te avisamos por WhatsApp cuando el almacén confirme, si el servicio está activo. También podés ver el estado abajo o volver más tarde: se actualiza solo.'}
@@ -157,24 +157,24 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
         <div className="flex flex-col gap-4">
           {loaded.map((row) => (
             <div key={row.id}>
-              <div className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
-                <p className="text-sm text-[#736E64]">Número de pedido</p>
-                <p className="mt-0.5 font-mono text-2xl font-bold text-[#2D7A2D]">
+              <div className="rounded-xl border border-[#EAE1D9] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]">
+                <p className="text-sm text-[#7B675B]">Número de pedido</p>
+                <p className="mt-0.5 font-mono text-2xl font-bold text-[#059669]">
                   {row.order_number}
                 </p>
-                <p className="mt-1 text-xs text-[#A39E94]">
+                <p className="mt-1 text-xs text-[#9C8F85]">
                   {formatFecha(row.created_at)}
                 </p>
                 {row.almacenNombre ? (
-                  <p className="mt-2 text-sm text-[#524E46]">
+                  <p className="mt-2 text-sm text-[#5B473D]">
                     {row.almacenNombre}
                     {row.almacenMunicipio ? ` · ${row.almacenMunicipio}` : ''}
                   </p>
                 ) : null}
                 {row.itemCount > 0 ? (
-                  <p className="mt-1 text-sm text-[#524E46]">
+                  <p className="mt-1 text-sm text-[#5B473D]">
                     {row.itemCount} producto{row.itemCount !== 1 ? 's' : ''} ·{' '}
-                    <span className="tabular-nums font-semibold text-[#2D7A2D]">
+                    <span className="tabular-nums font-semibold text-[#059669]">
                       {formatCOP(Number(row.subtotal))}
                     </span>
                   </p>
@@ -192,7 +192,7 @@ export default async function PedidoConfirmacionPage({ searchParams }: PageProps
         <div className="mt-6 flex flex-col gap-3">
           <Link
             href="/catalogo"
-            className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#2D7A2D] text-base font-semibold text-white hover:bg-[#236023]"
+            className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#059669] text-base font-semibold text-white hover:bg-[#047857]"
           >
             <ShoppingBag size={18} aria-hidden />
             Seguir comprando

@@ -94,9 +94,9 @@ export default function CarritoPage() {
 
   if (lines.length === 0) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
+      <div className="min-h-screen bg-[#FAF7F2] px-4 py-6">
         <div className="mx-auto max-w-lg">
-          <h1 className="text-xl font-bold text-[#252320]">Carrito</h1>
+          <h1 className="text-xl font-bold text-[#1A0F0A]">Carrito</h1>
           <MensajeVacio
             Icon={Package}
             title="Tu carrito está vacío"
@@ -113,14 +113,14 @@ export default function CarritoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] px-4 py-6">
+    <div className="min-h-screen bg-[#FAF7F2] px-4 py-6">
       <div className="mx-auto max-w-lg">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-[#252320]">Carrito</h1>
+          <h1 className="text-xl font-bold text-[#1A0F0A]">Carrito</h1>
           <button
             type="button"
             onClick={() => clear()}
-            className="text-sm font-medium text-[#736E64] underline"
+            className="text-sm font-medium text-[#7B675B] underline"
           >
             Vaciar todo
           </button>
@@ -130,9 +130,9 @@ export default function CarritoPage() {
           {Array.from(grouped.entries()).map(([warehouseId, groupLines]) => (
             <div
               key={warehouseId}
-              className="rounded-xl border border-[#E8E4DD] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]"
+              className="rounded-xl border border-[#EAE1D9] bg-white p-4 shadow-[0_1px_2px_rgba(18,17,16,0.06)]"
             >
-              <p className="text-sm font-semibold text-[#3A3732]">
+              <p className="text-sm font-semibold text-[#3D2F28]">
                 {groupLines[0]?.warehouseName ?? 'Almacén'}
               </p>
               <ul className="mt-3 flex flex-col gap-3">
@@ -142,15 +142,15 @@ export default function CarritoPage() {
                     className="flex gap-3 border-t border-[#F0ECE6] pt-3 first:border-t-0 first:pt-0"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-[#252320]">
+                      <p className="font-medium text-[#1A0F0A]">
                         {line.productName}
                       </p>
-                      <p className="text-xs text-[#736E64]">
+                      <p className="text-xs text-[#7B675B]">
                         {[line.presentation, line.unitOfMeasure]
                           .filter(Boolean)
                           .join(' · ')}
                       </p>
-                      <p className="mt-1 text-sm tabular-nums text-[#2D7A2D]">
+                      <p className="mt-1 text-sm tabular-nums text-[#059669]">
                         {formatCOP(line.unitPrice)} c/u
                       </p>
                     </div>
@@ -167,7 +167,7 @@ export default function CarritoPage() {
                               line.quantity - 1
                             )
                           }
-                          className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
+                          className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#EAE1D9] bg-[#FDFBF7] text-[#5B473D] disabled:opacity-40"
                         >
                           <Minus size={20} aria-hidden />
                         </button>
@@ -185,7 +185,7 @@ export default function CarritoPage() {
                               line.quantity + 1
                             )
                           }
-                          className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8E4DD] bg-[#F5F3EF] text-[#524E46] disabled:opacity-40"
+                          className="flex h-14 w-14 items-center justify-center rounded-xl border border-[#EAE1D9] bg-[#FDFBF7] text-[#5B473D] disabled:opacity-40"
                         >
                           <Plus size={20} aria-hidden />
                         </button>
@@ -211,10 +211,10 @@ export default function CarritoPage() {
           <div>
             <label
               htmlFor="cart-notes"
-              className="text-sm font-semibold text-[#3A3732]"
+              className="text-sm font-semibold text-[#3D2F28]"
             >
               Notas para los almacenes{' '}
-              <span className="font-normal text-[#A39E94]">(opcional)</span>
+              <span className="font-normal text-[#9C8F85]">(opcional)</span>
             </label>
             <textarea
               id="cart-notes"
@@ -222,25 +222,25 @@ export default function CarritoPage() {
               value={notes}
               maxLength={NOTES_MAX + 10}
               onChange={(ev) => setNotes(ev.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-[#D4CEC4] bg-white px-4 py-3 text-base text-[#252320] outline-none focus:border-[#2D7A2D] focus:ring-2 focus:ring-[#2D7A2D]/20"
+              className="mt-1.5 w-full rounded-xl border border-[#2D1B14] bg-white px-4 py-3 text-base text-[#1A0F0A] outline-none focus:border-[#059669] focus:ring-2 focus:ring-[#059669]/20"
               placeholder="Ej.: entregar en la vereda el martes"
             />
           </div>
 
-          <div className="rounded-xl border border-[#A8D1A8] bg-[#F0F7F0] p-4">
+          <div className="rounded-xl border border-[#A7F3D0] bg-[#ECFDF5] p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#236023]">Total</span>
-              <span className="tabular-nums text-xl font-bold text-[#2D7A2D]">
+              <span className="text-sm font-medium text-[#047857]">Total</span>
+              <span className="tabular-nums text-xl font-bold text-[#059669]">
                 {formatCOP(total)}
               </span>
             </div>
             {grouped.size > 1 ? (
-              <p className="mt-2 text-xs text-[#4A9B4A]">
+              <p className="mt-2 text-xs text-[#10B981]">
                 Se crearán {grouped.size} pedidos (uno por almacén). El pago
                 acuerdas en cada almacén.
               </p>
             ) : (
-              <p className="mt-2 text-xs text-[#4A9B4A]">
+              <p className="mt-2 text-xs text-[#10B981]">
                 Precio final confirmado por el almacén
               </p>
             )}
@@ -251,7 +251,7 @@ export default function CarritoPage() {
           <button
             type="submit"
             disabled={loading || notes.trim().length > NOTES_MAX}
-            className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#2D7A2D] text-base font-semibold text-white hover:bg-[#236023] disabled:opacity-60"
+            className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#059669] text-base font-semibold text-white hover:bg-[#047857] disabled:opacity-60"
           >
             <ShoppingBag size={18} aria-hidden />
             {loading ? 'Enviando…' : 'Confirmar pedido(s)'}
@@ -259,7 +259,7 @@ export default function CarritoPage() {
 
           <Link
             href="/catalogo"
-            className="flex h-14 items-center justify-center rounded-xl border border-[#D4CEC4] text-base font-medium text-[#524E46]"
+            className="flex h-14 items-center justify-center rounded-xl border border-[#2D1B14] text-base font-medium text-[#5B473D]"
           >
             Seguir comprando
           </Link>
